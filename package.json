@@ -5,6 +5,7 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "pnpm --filter @coursemind/web dev",
+    "start": "pnpm --filter @coursemind/web start",
     "build": "pnpm --filter @coursemind/web build",
     "lint": "pnpm --filter @coursemind/web lint",
     "typecheck": "pnpm --filter @coursemind/web typecheck",
