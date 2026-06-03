@@ -29,7 +29,7 @@ CourseMind is expected to become a real project, not just a disposable MVP. Earl
 
 ## Follow-Up
 
-- Confirm GitHub repo name.
-- Confirm owner: `kipp7` personal account or an organization.
-- Confirm visibility: private or public.
-- Create remote and push the initial commit.
+- Use public repository visibility per user direction.
+- Use `coursemind` as the durable, product-style repository name if still available.
+- Create remote under `kipp7`.
+- Push the initial commit after public-release hygiene is complete.

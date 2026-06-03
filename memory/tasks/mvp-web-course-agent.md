@@ -11,6 +11,8 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - Project-specific `AGENTS.md` now defines technical direction, memory rules, and GitHub workflow.
 - Architecture docs and a first durable architecture decision are being added.
 - GitHub-first development workflow has been adopted: coherent changes should be committed early and pushed once `origin` exists.
+- User requested a public GitHub repository and adversarial release review.
+- `coursemind` is the selected product-style repository name if still available.
 
 ## Constraints
 
@@ -18,7 +20,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - Architecture should not become a one-off chat page.
 - RAG comes before fine-tuning.
 - Provider choices must remain replaceable.
-- Remote GitHub publishing requires user confirmation for repo name, owner, and visibility.
+- Remote GitHub publishing target is `kipp7/coursemind` with public visibility.
 - Avoid large uncommitted or unpushed local work.
 
 ## Plan
@@ -29,6 +31,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 4. Later, migrate the static MVP into a production frontend stack.
 5. Later, connect an API layer and a RAG provider.
 6. After remote confirmation, create the GitHub repository and push the initial commit.
+7. Keep future work committed and pushed in small coherent units.
 
 ## Done Criteria
 
