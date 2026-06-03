@@ -7,6 +7,8 @@
 .venv/
 node_modules/
 __pycache__/
+.next/
+*.tsbuildinfo
 .env
 .env.*
 !.env.example

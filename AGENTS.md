@@ -13,7 +13,7 @@ Do not treat the MVP as a disposable chat demo. Every implementation choice shou
 ## Active Technical Direction
 
 - Delivery surface: Web first.
-- MVP frontend: static prototype now; React / Next.js is the expected production frontend.
+- MVP frontend: Next.js App Router app in `apps/web`.
 - Backend boundary: keep school business logic in our own API layer.
 - AI platform: prefer RAG first, with Dify or RAGFlow as replaceable adapters.
 - Model access: use OpenAI-compatible model gateway semantics so Qwen, DeepSeek, OpenAI, vLLM, or Ollama can be swapped.

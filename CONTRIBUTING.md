@@ -33,7 +33,7 @@ Do not commit:
 Before pushing substantial work:
 
 ```powershell
-node --check .\app.js
+pnpm check
 ```
 
 If you have the local GitHub publish-check helper installed, run it in public-release mode as well. GitHub Actions also runs repository hygiene checks on push and pull requests.

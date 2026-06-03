@@ -27,6 +27,6 @@ CourseMind is public and school-facing. Even in MVP stage, the repository needs 
 
 ## Follow-Up
 
-- Convert the static prototype into an app workspace.
+- Static prototype has been converted into a Next.js app workspace.
 - Add typed contracts when the frontend/backend stack is chosen.
 - Expand CI once package tooling exists.

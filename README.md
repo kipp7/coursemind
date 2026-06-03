@@ -14,7 +14,7 @@ This repository is in the first MVP stage.
 
 Implemented now:
 
-- static Web prototype
+- Next.js Web MVP under `apps/web`
 - student, teacher, and admin surfaces
 - course switching
 - cited answer experience
@@ -31,15 +31,38 @@ Not implemented yet:
 - teacher review persistence
 - fine-tuning
 
+Selected Web stack:
+
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- pnpm workspaces
+
 ## Run The MVP
 
-Open the static prototype in a browser:
+Install dependencies:
 
-```text
-index.html
+```powershell
+pnpm install
 ```
 
-No build step is required for the current prototype.
+Start the Web app:
+
+```powershell
+pnpm dev
+```
+
+Then open:
+
+```text
+the local development URL printed by Next.js
+```
+
+Run local checks:
+
+```powershell
+pnpm check
+```
 
 ## Architecture
 
@@ -59,6 +82,8 @@ Key documents:
 - `AGENTS.md`
 - `docs/architecture/technical-architecture.md`
 - `docs/architecture/risk-register.md`
+- `docs/architecture/adr-0004-nextjs-typescript-web-stack.md`
+- `docs/architecture/tooling-candidates.md`
 - `docs/product/mvp-scope.md`
 - `docs/product/demo-script.md`
 - `docs/integrations/provider-strategy.md`

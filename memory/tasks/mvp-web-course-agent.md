@@ -14,6 +14,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - User requested a public GitHub repository and adversarial release review.
 - `coursemind` is the selected product-style repository name if still available.
 - Five-pass adversarial review added governance, risk, demo, contract, contribution, and CI guardrails.
+- User confirmed Next.js as the Web stack direction.
 
 ## Constraints
 
@@ -26,14 +27,12 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 
 ## Plan
 
-1. Keep the static MVP usable as the first demo.
+1. Keep the Next.js MVP usable as the first demo.
 2. Establish docs and memory as project-level source of truth.
-3. Initialize local Git and prepare for GitHub publication.
-4. Later, migrate the static MVP into a production frontend stack.
-5. Later, connect an API layer and a RAG provider.
-6. After remote confirmation, create the GitHub repository and push the initial commit.
-7. Keep future work committed and pushed in small coherent units.
-8. Watch the first GitHub Actions quality gate after pushing governance updates.
+3. Keep local Git and GitHub remote in sync.
+4. Connect an API layer and a RAG provider later.
+5. Keep future work committed and pushed in small coherent units.
+6. Watch GitHub Actions after pushing the Next.js migration.
 
 ## Done Criteria
 

@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --bg: #f4f1ea;
   --surface: #fffdf8;
@@ -8,7 +10,6 @@
   --accent: #0f7a68;
   --accent-dark: #0a574b;
   --gold: #b97812;
-  --red: #ad433c;
   --shadow: 0 20px 60px rgba(47, 42, 31, 0.12);
   font-family:
     Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
@@ -275,24 +276,11 @@ h2 {
   margin-bottom: 22px;
   overflow: hidden;
   border-radius: 8px;
-  background: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(12, 22, 22, 0.82), rgba(12, 22, 22, 0.18)),
+    url("https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1400&q=80")
+      center / cover;
   box-shadow: var(--shadow);
-}
-
-.hero-strip img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: saturate(0.85);
-}
-
-.hero-strip::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background: linear-gradient(90deg, rgba(12, 22, 22, 0.82), rgba(12, 22, 22, 0.18));
 }
 
 .hero-overlay {
@@ -382,6 +370,7 @@ h2 {
   gap: 14px;
   flex: 1;
   min-height: 0;
+  max-height: 390px;
   padding-right: 4px;
   overflow-y: auto;
 }
@@ -497,7 +486,6 @@ h2 {
 
 .knowledge-meter span {
   display: block;
-  width: var(--value);
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, var(--accent), var(--gold));

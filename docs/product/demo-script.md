@@ -13,14 +13,15 @@ Show that CourseMind is a course-aware teaching assistant, not a generic chatbot
 
 ## Flow
 
-1. Open `index.html`.
-2. Point out the three roles: student, teacher, admin.
-3. Select a course.
-4. Ask a student-style question.
-5. Show that the answer includes cited course sources.
-6. Switch to teacher mode and explain teacher configuration/review.
-7. Point to the knowledge base status area.
-8. Explain the architecture path: Web client, API, RAG gateway, model gateway, storage/governance.
+1. Run `pnpm dev`.
+2. Open `http://localhost:3000`.
+3. Point out the three roles: student, teacher, admin.
+4. Select a course.
+5. Ask a student-style question.
+6. Show that the answer includes cited course sources.
+7. Switch to teacher mode and explain teacher configuration/review.
+8. Point to the knowledge base status area.
+9. Explain the architecture path: Web client, API, RAG gateway, model gateway, storage/governance.
 
 ## Talk Track
 
@@ -35,9 +36,8 @@ CourseMind starts with RAG because course materials change often. The agent shou
 
 ## Known Limitations
 
-- Current prototype is static.
+- Current prototype is a Next.js MVP with mocked data.
 - Citations and knowledge base status are mocked.
 - No backend API exists yet.
 - No authentication or real role permissions exist yet.
 - No real RAG provider is connected yet.
-

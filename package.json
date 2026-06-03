@@ -1,0 +1,16 @@
+{
+  "name": "coursemind",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --filter @coursemind/web dev",
+    "build": "pnpm --filter @coursemind/web build",
+    "lint": "pnpm --filter @coursemind/web lint",
+    "typecheck": "pnpm --filter @coursemind/web typecheck",
+    "check": "pnpm lint && pnpm typecheck && pnpm build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

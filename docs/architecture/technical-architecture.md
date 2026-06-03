@@ -24,7 +24,7 @@ Web Client
 - Admin provider, course, usage, and audit surfaces
 - Citation display and teacher review UI
 
-The current static MVP is only a visual and interaction proof. The production target should move to React or Next.js once the product boundary is stable.
+The current MVP is a Next.js App Router application under `apps/web`. It is still a mocked interaction proof, but it now uses the intended Web stack.
 
 ### Application API
 
@@ -124,4 +124,3 @@ student asks question
 - Privacy: protect student questions and learning records.
 - Cost: record model usage and add throttling/caching later.
 - Vendor lock-in: keep provider integrations behind adapters.
-
