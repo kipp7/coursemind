@@ -1,0 +1,15 @@
+﻿# memory-context-workspace
+.context/
+.bm-state/
+.tools/*
+!.tools/basic-memory/
+!.tools/basic-memory/*.cmd
+.venv/
+node_modules/
+__pycache__/
+*.log
+ctx-*.log
+*.db
+*.sqlite
+*.sqlite3
+# /memory-context-workspace
