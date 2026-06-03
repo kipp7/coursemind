@@ -58,10 +58,15 @@ Key documents:
 
 - `AGENTS.md`
 - `docs/architecture/technical-architecture.md`
+- `docs/architecture/risk-register.md`
 - `docs/product/mvp-scope.md`
+- `docs/product/demo-script.md`
 - `docs/integrations/provider-strategy.md`
+- `docs/integrations/contracts.md`
+- `docs/security/education-data-governance.md`
 - `memory/decisions/0001-rag-first-platform-architecture.md`
 - `memory/decisions/0002-github-first-development-workflow.md`
+- `memory/decisions/0003-public-mvp-governance-gates.md`
 
 ## RAG Before Fine-Tuning
 
@@ -72,6 +77,10 @@ RAG teaches the system current course content. Fine-tuning later teaches stable 
 ## Public Repository Policy
 
 This repository should not contain real student data, private school documents, API keys, internal endpoints, or copyrighted teaching materials without explicit publication rights. See `SECURITY.md`.
+
+## Contributing
+
+See `CONTRIBUTING.md`. This project uses small commits, frequent pushes, and GitHub Actions hygiene checks.
 
 ## Project Memory
 

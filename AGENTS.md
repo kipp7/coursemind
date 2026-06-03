@@ -85,6 +85,8 @@ Working cadence:
 - Do not let frontend code call model providers directly.
 - Do not put school policy, permissions, or audit decisions inside prompt text only; represent them in backend rules or persisted configuration.
 - Prefer a single vertical slice before broad platform expansion.
+- Update `docs/architecture/risk-register.md` when a new deployment, privacy, provider, or academic-integrity risk appears.
+- Follow `docs/security/education-data-governance.md` before introducing real data or course materials.
 
 ## MVP Done Criteria
 

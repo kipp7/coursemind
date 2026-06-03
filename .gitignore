@@ -7,6 +7,15 @@
 .venv/
 node_modules/
 __pycache__/
+.env
+.env.*
+!.env.example
+dist/
+build/
+coverage/
+uploads/
+data/private/
+course-materials/private/
 *.log
 ctx-*.log
 *.db

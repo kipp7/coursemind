@@ -13,6 +13,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - GitHub-first development workflow has been adopted: coherent changes should be committed early and pushed once `origin` exists.
 - User requested a public GitHub repository and adversarial release review.
 - `coursemind` is the selected product-style repository name if still available.
+- Five-pass adversarial review added governance, risk, demo, contract, contribution, and CI guardrails.
 
 ## Constraints
 
@@ -32,6 +33,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 5. Later, connect an API layer and a RAG provider.
 6. After remote confirmation, create the GitHub repository and push the initial commit.
 7. Keep future work committed and pushed in small coherent units.
+8. Watch the first GitHub Actions quality gate after pushing governance updates.
 
 ## Done Criteria
 

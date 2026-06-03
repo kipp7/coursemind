@@ -1,0 +1,64 @@
+name: quality-gates
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  repository-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required public files
+        shell: pwsh
+        run: |
+          $required = @(
+            "README.md",
+            "LICENSE",
+            "SECURITY.md",
+            "CONTRIBUTING.md",
+            "AGENTS.md",
+            "docs/architecture/technical-architecture.md",
+            "docs/architecture/risk-register.md",
+            "docs/security/education-data-governance.md",
+            "docs/product/demo-script.md"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Missing required file: $path"
+            }
+          }
+
+      - name: Secret pattern scan
+        shell: pwsh
+        run: |
+          $patterns = @(
+            "OPENAI_API_KEY",
+            "API_KEY",
+            "SECRET",
+            "PASSWORD",
+            "PRIVATE KEY",
+            "BEGIN .*PRIVATE KEY",
+            "gho_[A-Za-z0-9_]+",
+            "(^|[^A-Za-z0-9])sk-[A-Za-z0-9]{20,}",
+            "Bearer\s+[A-Za-z0-9._-]+"
+          )
+          $files = Get-ChildItem -Recurse -File |
+            Where-Object {
+              $_.FullName -notmatch "[/\\]\.git[/\\]" -and
+              $_.FullName -notmatch "[/\\]\.github[/\\]workflows[/\\]quality-gates\.yml$"
+            }
+          foreach ($pattern in $patterns) {
+            $matches = $files | Select-String -Pattern $pattern -CaseSensitive -ErrorAction SilentlyContinue
+            if ($matches) {
+              $matches | ForEach-Object { Write-Host "$($_.Path):$($_.LineNumber): $($_.Line)" }
+              throw "Secret-like pattern matched: $pattern"
+            }
+          }
+
+      - name: JavaScript syntax check
+        run: node --check app.js
