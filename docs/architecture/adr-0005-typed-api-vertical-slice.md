@@ -20,6 +20,8 @@ The first implementation uses mock course snapshots and mock retrieval data. It 
 
 The mock retrieval path has since been moved behind `services/api/src/rag`. The use case now depends on a `RagGateway` interface rather than inline retrieval logic.
 
+The shared contracts package now uses Zod schemas as the source of truth for DTOs. API routes validate requests and responses at runtime.
+
 ## Rationale
 
 This keeps the MVP fast while preserving the future architecture. The Web app now calls CourseMind's own API first, and the API owns school business rules such as role visibility, citation requirements, and teacher review state.
@@ -33,9 +35,11 @@ Mock retrieval is acceptable at this stage because the goal is to prove the cont
 - The MVP can demo the full answer path without real course data or secrets.
 - Persistence, authentication, and real provider adapters are still deferred.
 - `COURSEMIND_RAG_PROVIDER` currently defaults to `mock`; non-mock provider IDs are reserved until configured adapters exist.
+- Runtime validation is now available at the answer API boundary through `answerRequestSchema` and `answerResponseSchema`.
 
 ## Follow-Up
 
 - Implement Dify and RAGFlow adapters behind the existing RAG gateway interface.
+- Add validation coverage to future API routes as they are introduced.
 - Add persistence for conversation messages and teacher reviews.
 - Localize Web demo copy for the intended Chinese school audience.

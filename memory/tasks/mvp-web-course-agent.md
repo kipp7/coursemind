@@ -18,6 +18,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - A typed MVP vertical slice has been added: shared contracts, a mock `services/api` course-agent use case, and Next.js API routes for courses and agent answers.
 - The Web app now posts questions to CourseMind's own API boundary and displays citations, review status, and a mock RAG trace.
 - A first RAG gateway adapter boundary exists in `services/api/src/rag`; the course-agent use case now depends on `RagGateway` instead of inline retrieval logic.
+- Shared contracts now use Zod schemas, and `/api/agent/answer` validates request and response payloads at runtime.
 
 ## Constraints
 
@@ -34,7 +35,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 2. Establish docs and memory as project-level source of truth.
 3. Keep local Git and GitHub remote in sync.
 4. Implement Dify and RAGFlow adapters behind the existing RAG gateway interface.
-5. Decide whether to add Zod for runtime validation at API boundaries.
+5. Add validation to future API routes as they are introduced.
 6. Persist conversation messages and teacher review records.
 7. Localize the Web demo copy for the intended Chinese school audience.
 8. Keep future work committed and pushed in small coherent units.

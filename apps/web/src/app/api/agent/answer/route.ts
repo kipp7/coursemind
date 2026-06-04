@@ -1,33 +1,41 @@
 import { answerCourseQuestion, RagProviderConfigurationError } from "@coursemind/api";
-import type { AnswerRequest, CourseRole } from "@coursemind/contracts";
+import { answerRequestSchema, answerResponseSchema } from "@coursemind/contracts";
 import { NextResponse } from "next/server";
-
-const roles: CourseRole[] = ["student", "teacher", "admin"];
+import { ZodError } from "zod";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as Partial<AnswerRequest>;
+  let payload: unknown;
 
-  if (!body.courseId || typeof body.courseId !== "string") {
-    return NextResponse.json({ error: "courseId is required" }, { status: 400 });
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Request body must be valid JSON" }, { status: 400 });
   }
 
-  if (!body.question || typeof body.question !== "string" || !body.question.trim()) {
-    return NextResponse.json({ error: "question is required" }, { status: 400 });
-  }
+  const parseResult = answerRequestSchema.safeParse(payload);
 
-  if (!body.role || !roles.includes(body.role)) {
-    return NextResponse.json({ error: "valid role is required" }, { status: 400 });
+  if (!parseResult.success) {
+    return NextResponse.json(
+      {
+        error: "Invalid answer request",
+        details: parseResult.error.issues.map((issue) => ({
+          path: issue.path.join("."),
+          message: issue.message,
+        })),
+      },
+      { status: 400 },
+    );
   }
 
   try {
-    const response = await answerCourseQuestion({
-      courseId: body.courseId,
-      role: body.role,
-      question: body.question.trim(),
-    });
+    const response = answerResponseSchema.parse(await answerCourseQuestion(parseResult.data));
 
     return NextResponse.json(response);
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: "Invalid answer response" }, { status: 500 });
+    }
+
     const message = error instanceof Error ? error.message : "Unable to answer question";
     const status = error instanceof RagProviderConfigurationError ? 503 : 404;
     return NextResponse.json({ error: message }, { status });

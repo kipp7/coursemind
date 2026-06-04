@@ -4,6 +4,15 @@ These contracts describe the first shared objects the frontend, API, RAG gateway
 
 The initial implementation now lives in `libs/contracts/src/index.ts`. Keep this document as the human-readable contract guide and update the package when shapes change.
 
+Contracts are now schema-first with Zod. Types are inferred from runtime schemas so API routes can validate input and output instead of relying only on TypeScript compile-time checks.
+
+Current runtime validation:
+
+- `/api/agent/answer` validates request JSON with `answerRequestSchema`.
+- `/api/agent/answer` validates the generated response with `answerResponseSchema` before returning it.
+- Invalid requests return `400` with field-level details.
+- Provider configuration failures return `503`.
+
 ## Course
 
 ```ts

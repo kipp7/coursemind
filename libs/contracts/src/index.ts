@@ -1,78 +1,91 @@
-export type CourseRole = "student" | "teacher" | "admin";
+import { z } from "zod";
 
-export type Course = {
-  id: string;
-  schoolId: string;
-  title: string;
-  term?: string;
-  ownerUserIds: string[];
-  status: "draft" | "active" | "archived";
-};
+export const courseRoleSchema = z.enum(["student", "teacher", "admin"]);
+export type CourseRole = z.infer<typeof courseRoleSchema>;
 
-export type CourseDocument = {
-  id: string;
-  courseId: string;
-  title: string;
-  sourceType: "pdf" | "ppt" | "word" | "markdown" | "web" | "transcript";
-  visibility: "student" | "teacher" | "admin";
-  ingestionStatus: "pending" | "indexed" | "needs_review" | "blocked";
-};
+export const courseSchema = z.object({
+  id: z.string().min(1),
+  schoolId: z.string().min(1),
+  title: z.string().min(1),
+  term: z.string().min(1).optional(),
+  ownerUserIds: z.array(z.string().min(1)),
+  status: z.enum(["draft", "active", "archived"]),
+});
+export type Course = z.infer<typeof courseSchema>;
 
-export type Citation = {
-  documentId: string;
-  title: string;
-  locator?: string;
-  excerpt?: string;
-  confidence?: number;
-};
+export const courseDocumentSchema = z.object({
+  id: z.string().min(1),
+  courseId: z.string().min(1),
+  title: z.string().min(1),
+  sourceType: z.enum(["pdf", "ppt", "word", "markdown", "web", "transcript"]),
+  visibility: z.enum(["student", "teacher", "admin"]),
+  ingestionStatus: z.enum(["pending", "indexed", "needs_review", "blocked"]),
+});
+export type CourseDocument = z.infer<typeof courseDocumentSchema>;
 
-export type ConversationMessage = {
-  id: string;
-  conversationId: string;
-  role: CourseRole | "assistant" | "system";
-  content: string;
-  citations?: Citation[];
-  createdAt: string;
-};
+export const citationSchema = z.object({
+  documentId: z.string().min(1),
+  title: z.string().min(1),
+  locator: z.string().min(1).optional(),
+  excerpt: z.string().min(1).optional(),
+  confidence: z.number().min(0).max(1).optional(),
+});
+export type Citation = z.infer<typeof citationSchema>;
 
-export type TeacherReviewStatus = "pending" | "approved" | "corrected" | "rejected";
+export const conversationMessageSchema = z.object({
+  id: z.string().min(1),
+  conversationId: z.string().min(1),
+  role: z.union([courseRoleSchema, z.enum(["assistant", "system"])]),
+  content: z.string().min(1),
+  citations: z.array(citationSchema).optional(),
+  createdAt: z.string().datetime(),
+});
+export type ConversationMessage = z.infer<typeof conversationMessageSchema>;
 
-export type TeacherReview = {
-  id: string;
-  messageId: string;
-  reviewerUserId?: string;
-  status: TeacherReviewStatus;
-  correction?: string;
-  rubricNotes?: string;
-  createdAt: string;
-};
+export const teacherReviewStatusSchema = z.enum(["pending", "approved", "corrected", "rejected"]);
+export type TeacherReviewStatus = z.infer<typeof teacherReviewStatusSchema>;
 
-export type RagTrace = {
-  provider: "mock" | "dify" | "ragflow" | "custom";
-  query: string;
-  retrievedDocumentIds: string[];
-  retrievalPolicy: "course_visible_documents" | "teacher_private_documents";
-};
+export const teacherReviewSchema = z.object({
+  id: z.string().min(1),
+  messageId: z.string().min(1),
+  reviewerUserId: z.string().min(1).optional(),
+  status: teacherReviewStatusSchema,
+  correction: z.string().min(1).optional(),
+  rubricNotes: z.string().min(1).optional(),
+  createdAt: z.string().datetime(),
+});
+export type TeacherReview = z.infer<typeof teacherReviewSchema>;
 
-export type AnswerRequest = {
-  courseId: string;
-  role: CourseRole;
-  question: string;
-};
+export const ragTraceSchema = z.object({
+  provider: z.enum(["mock", "dify", "ragflow", "custom"]),
+  query: z.string().min(1),
+  retrievedDocumentIds: z.array(z.string().min(1)),
+  retrievalPolicy: z.enum(["course_visible_documents", "teacher_private_documents"]),
+});
+export type RagTrace = z.infer<typeof ragTraceSchema>;
 
-export type AnswerResponse = {
-  conversationId: string;
-  answerMessage: ConversationMessage;
-  citations: Citation[];
-  ragTrace: RagTrace;
-  review: TeacherReview;
-  guardrails: string[];
-};
+export const answerRequestSchema = z.object({
+  courseId: z.string().min(1),
+  role: courseRoleSchema,
+  question: z.string().trim().min(1),
+});
+export type AnswerRequest = z.infer<typeof answerRequestSchema>;
 
-export type CourseSnapshot = {
-  course: Course;
-  documents: CourseDocument[];
-  indexedChunks: number;
-  coveragePercent: number;
-  pendingReviewCount: number;
-};
+export const answerResponseSchema = z.object({
+  conversationId: z.string().min(1),
+  answerMessage: conversationMessageSchema,
+  citations: z.array(citationSchema),
+  ragTrace: ragTraceSchema,
+  review: teacherReviewSchema,
+  guardrails: z.array(z.string().min(1)),
+});
+export type AnswerResponse = z.infer<typeof answerResponseSchema>;
+
+export const courseSnapshotSchema = z.object({
+  course: courseSchema,
+  documents: z.array(courseDocumentSchema),
+  indexedChunks: z.number().int().nonnegative(),
+  coveragePercent: z.number().min(0).max(100),
+  pendingReviewCount: z.number().int().nonnegative(),
+});
+export type CourseSnapshot = z.infer<typeof courseSnapshotSchema>;

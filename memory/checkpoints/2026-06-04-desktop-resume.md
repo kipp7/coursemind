@@ -23,6 +23,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 - Next.js API routes were added for `/api/courses` and `/api/agent/answer`.
 - The Web UI now calls CourseMind's own API and displays citations, mock RAG trace, guardrails, and teacher review state.
 - A first RAG gateway code boundary now exists in `services/api/src/rag`, with `mock` as the default provider.
+- Shared contracts now use Zod schemas, and the answer API validates request and response payloads at runtime.
 - Memory decisions currently recorded:
   - `memory/decisions/0001-rag-first-platform-architecture.md`
   - `memory/decisions/0002-github-first-development-workflow.md`
@@ -45,7 +46,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 ## Next Steps
 
 - Implement Dify and RAGFlow adapters behind the existing RAG gateway interface.
-- Decide whether to add Zod for runtime contract validation at API boundaries.
+- Extend runtime validation to future API routes.
 - Persist conversation messages and teacher review records after the mock flow is stable.
 - Localize the demo UI copy for a Chinese school-facing presentation.
 - Keep the GitHub-first cadence: run `pnpm check`, commit coherent changes, push, and verify Actions.
