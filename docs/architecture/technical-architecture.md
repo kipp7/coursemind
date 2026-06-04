@@ -106,6 +106,7 @@ The MVP now has a mock persistence boundary in `services/api/src/repositories`:
 - `/api/teacher/reviews` exposes the current teacher review queue for the Web demo.
 - `/api/teacher/reviews/[reviewId]` lets the demo approve, correct, or reject a pending teacher review.
 - `/api/audit/events` exposes the current audit trail for the Web demo.
+- `/api/courses/[courseId]/documents` creates a mocked course material ingestion task and records it in the audit trail.
 
 This is not durable database storage. It exists to prove the school review and audit boundary before introducing Prisma/PostgreSQL or another production store.
 
@@ -122,11 +123,12 @@ The first serious MVP should prove:
 ```text
 student asks question
   -> course context is selected
+  -> course material ingestion can be requested
   -> RAG returns cited materials
   -> model generates answer
   -> citations are displayed
   -> teacher can review or correct the answer
-  -> audit events record answer and review actions
+  -> audit events record ingestion, answer, and review actions
 ```
 
 ## Key Risks

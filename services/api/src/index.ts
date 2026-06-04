@@ -1,5 +1,6 @@
 export {
   answerCourseQuestion,
+  createCourseDocument,
   getCourseSnapshots,
   listAuditEvents,
   listTeacherReviewQueue,

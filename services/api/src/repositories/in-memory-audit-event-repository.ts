@@ -1,7 +1,12 @@
 import type { AuditEvent } from "@coursemind/contracts";
 import type { AuditEventRepository, RecordAuditEventInput } from "./audit-event-repository";
 
-const auditEvents: AuditEvent[] = [];
+type CourseMindAuditGlobal = typeof globalThis & {
+  __coursemindAuditEvents?: AuditEvent[];
+};
+
+const auditGlobal = globalThis as CourseMindAuditGlobal;
+const auditEvents = auditGlobal.__coursemindAuditEvents ??= [];
 
 export class InMemoryAuditEventRepository implements AuditEventRepository {
   async recordEvent(input: RecordAuditEventInput) {

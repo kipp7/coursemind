@@ -5,6 +5,8 @@ import type {
   AuditEvent,
   AuditEventListResponse,
   AnswerResponse,
+  CourseDocumentCreateRequest,
+  CourseDocumentCreateResponse,
   CourseDocument,
   CourseRole,
   CourseSnapshot,
@@ -106,6 +108,28 @@ const copy = {
       docs: "资料",
       chunks: "切片",
       queue: "队列",
+      ingestTitle: "新增课程资料",
+      documentTitle: "资料标题",
+      documentTitlePlaceholder: "例如：第 5 讲：向量数据库与检索评估",
+      sourceType: "资料类型",
+      visibility: "可见范围",
+      visibilityOptions: {
+        student: "学生可见",
+        teacher: "教师审核",
+        admin: "管理员",
+      },
+      sourceTypeOptions: {
+        pdf: "PDF",
+        ppt: "课件",
+        word: "Word",
+        markdown: "Markdown",
+        web: "网页",
+        transcript: "课堂转写",
+      },
+      submit: "创建入库任务",
+      submitting: "创建中",
+      created: "已创建资料入库任务。",
+      createFailed: "资料入库任务创建失败",
     },
     governance: {
       title: "治理链路",
@@ -124,6 +148,7 @@ const copy = {
       emptyBody: "提一个问题后会生成第一条审计记录。",
       eventTypes: {
         "agent.answer.created": "智能体回答已创建",
+        "course_document.ingestion_requested": "课程资料入库已请求",
         "teacher_review.updated": "教师审核已更新",
       },
     },
@@ -208,6 +233,28 @@ const copy = {
       docs: "Docs",
       chunks: "Chunks",
       queue: "Queue",
+      ingestTitle: "Add course material",
+      documentTitle: "Material title",
+      documentTitlePlaceholder: "Example: Lecture 5: Vector DB and retrieval evaluation",
+      sourceType: "Source type",
+      visibility: "Visibility",
+      visibilityOptions: {
+        student: "Student visible",
+        teacher: "Teacher review",
+        admin: "Admin",
+      },
+      sourceTypeOptions: {
+        pdf: "PDF",
+        ppt: "Slides",
+        word: "Word",
+        markdown: "Markdown",
+        web: "Web",
+        transcript: "Transcript",
+      },
+      submit: "Create ingestion task",
+      submitting: "Creating",
+      created: "Course material ingestion task created.",
+      createFailed: "Course material ingestion task failed",
     },
     governance: {
       title: "Governance trace",
@@ -226,6 +273,7 @@ const copy = {
       emptyBody: "Ask a question to create the first audit record.",
       eventTypes: {
         "agent.answer.created": "Agent answer created",
+        "course_document.ingestion_requested": "Course document ingestion requested",
         "teacher_review.updated": "Teacher review updated",
       },
     },
@@ -329,6 +377,11 @@ export default function Home() {
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [reviewQueueCount, setReviewQueueCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingDocument, setIsCreatingDocument] = useState(false);
+  const [documentTitle, setDocumentTitle] = useState("");
+  const [documentSourceType, setDocumentSourceType] = useState<CourseDocumentCreateRequest["sourceType"]>("pdf");
+  const [documentVisibility, setDocumentVisibility] = useState<CourseDocumentCreateRequest["visibility"]>("student");
+  const [documentNotice, setDocumentNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const navItems: NavItem[] = useMemo(
@@ -406,6 +459,48 @@ export default function Home() {
     await refreshAuditEvents();
   }
 
+  async function handleCreateDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedCourse || !documentTitle.trim()) {
+      return;
+    }
+
+    setIsCreatingDocument(true);
+    setDocumentNotice(null);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/courses/${selectedCourse.course.id}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: documentTitle.trim(),
+          sourceType: documentSourceType,
+          visibility: documentVisibility,
+          actorUserId: "teacher-demo",
+          locale,
+        }),
+      });
+      const data = (await response.json()) as CourseDocumentCreateResponse | { error: string };
+
+      if (!response.ok || "error" in data) {
+        throw new Error("error" in data ? data.error : text.knowledge.createFailed);
+      }
+
+      setCourses((current) =>
+        current.map((item) => (item.course.id === data.snapshot.course.id ? data.snapshot : item)),
+      );
+      setDocumentTitle("");
+      setDocumentNotice(text.knowledge.created);
+      await refreshAuditEvents();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : text.knowledge.createFailed);
+    } finally {
+      setIsCreatingDocument(false);
+    }
+  }
+
   const selectedCourse = useMemo(
     () => courses.find((item) => item.course.id === courseId) ?? courses[0],
     [courseId, courses],
@@ -436,7 +531,12 @@ export default function Home() {
     setPrompt(copy[nextLocale].prompts[role]);
     setMessages(createSeedMessages(nextLocale));
     setLastResponse(null);
+    setDocumentNotice(null);
     setError(null);
+  }
+
+  function focusDocumentForm() {
+    document.getElementById("document-title")?.focus();
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -569,7 +669,13 @@ export default function Home() {
             <h1>{text.top.title}</h1>
           </div>
           <div className="top-actions">
-            <button className="icon-button" title={text.top.upload} type="button" aria-label={text.top.upload}>
+            <button
+              className="icon-button"
+              title={text.top.upload}
+              type="button"
+              aria-label={text.top.upload}
+              onClick={focusDocumentForm}
+            >
               <Upload aria-hidden="true" />
             </button>
             <button className="primary-action" type="button">
@@ -680,6 +786,52 @@ export default function Home() {
                   <dd>{reviewQueueCount}</dd>
                 </div>
               </dl>
+              <form className="document-form" onSubmit={handleCreateDocument}>
+                <h3>{text.knowledge.ingestTitle}</h3>
+                <label htmlFor="document-title">{text.knowledge.documentTitle}</label>
+                <input
+                  id="document-title"
+                  onChange={(event) => setDocumentTitle(event.target.value)}
+                  placeholder={text.knowledge.documentTitlePlaceholder}
+                  value={documentTitle}
+                />
+                <div className="document-form-row">
+                  <label>
+                    <span>{text.knowledge.sourceType}</span>
+                    <select
+                      onChange={(event) =>
+                        setDocumentSourceType(event.target.value as CourseDocumentCreateRequest["sourceType"])
+                      }
+                      value={documentSourceType}
+                    >
+                      {Object.entries(text.knowledge.sourceTypeOptions).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>{text.knowledge.visibility}</span>
+                    <select
+                      onChange={(event) =>
+                        setDocumentVisibility(event.target.value as CourseDocumentCreateRequest["visibility"])
+                      }
+                      value={documentVisibility}
+                    >
+                      {Object.entries(text.knowledge.visibilityOptions).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {documentNotice ? <p className="success-line">{documentNotice}</p> : null}
+                <button className="secondary-action" disabled={isCreatingDocument || !documentTitle.trim()} type="submit">
+                  {isCreatingDocument ? text.knowledge.submitting : text.knowledge.submit}
+                </button>
+              </form>
             </section>
 
             <section className="inspector-block">

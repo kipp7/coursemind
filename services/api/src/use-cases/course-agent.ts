@@ -4,6 +4,9 @@ import type {
   AnswerResponse,
   AppLocale,
   Citation,
+  CourseDocument,
+  CourseDocumentCreateRequest,
+  CourseDocumentCreateResponse,
   ConversationMessage,
   CourseSnapshot,
   TeacherReview,
@@ -14,7 +17,11 @@ import { createRagGateway } from "../rag/provider-registry";
 import { auditEventRepository } from "../repositories/in-memory-audit-event-repository";
 import { conversationRepository } from "../repositories/in-memory-conversation-repository";
 
-const courseSnapshots: CourseSnapshot[] = [
+type CourseMindCourseGlobal = typeof globalThis & {
+  __coursemindCourseSnapshots?: CourseSnapshot[];
+};
+
+const defaultCourseSnapshots: CourseSnapshot[] = [
   {
     course: {
       id: "ai-101",
@@ -86,9 +93,58 @@ const courseSnapshots: CourseSnapshot[] = [
     pendingReviewCount: 3,
   },
 ];
+const courseGlobal = globalThis as CourseMindCourseGlobal;
+const courseSnapshots = courseGlobal.__coursemindCourseSnapshots ??= defaultCourseSnapshots;
 
 export function getCourseSnapshots() {
   return courseSnapshots;
+}
+
+export async function createCourseDocument(
+  courseId: string,
+  request: CourseDocumentCreateRequest,
+): Promise<CourseDocumentCreateResponse> {
+  const snapshot = courseSnapshots.find((item) => item.course.id === courseId);
+
+  if (!snapshot) {
+    throw new Error(`Unknown course: ${courseId}`);
+  }
+
+  const document: CourseDocument = {
+    id: `doc-${courseId}-${Date.now()}`,
+    courseId,
+    title: request.title,
+    sourceType: request.sourceType,
+    visibility: request.visibility,
+    ingestionStatus: request.visibility === "teacher" ? "needs_review" : "pending",
+  };
+
+  snapshot.documents = [document, ...snapshot.documents];
+  snapshot.pendingReviewCount += document.ingestionStatus === "needs_review" ? 1 : 0;
+
+  await auditEventRepository.recordEvent({
+    type: "course_document.ingestion_requested",
+    severity: document.visibility === "student" ? "info" : "warning",
+    actorRole: "teacher",
+    actorUserId: request.actorUserId,
+    courseId,
+    targetType: "course_document",
+    targetId: document.id,
+    summary:
+      request.locale === "zh-CN"
+        ? `已为课程 ${getCourseTitle(snapshot, request.locale)} 创建资料入库任务：${request.title}。`
+        : `Course document ingestion requested for ${snapshot.course.title}: ${request.title}.`,
+    metadata: {
+      sourceType: document.sourceType,
+      visibility: document.visibility,
+      ingestionStatus: document.ingestionStatus,
+    },
+  });
+
+  return {
+    snapshot,
+    document,
+  };
 }
 
 export async function answerCourseQuestion(request: AnswerRequest): Promise<AnswerResponse> {

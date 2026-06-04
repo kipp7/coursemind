@@ -1,8 +1,14 @@
 import type { ConversationLogEntry, TeacherReviewAction, TeacherReviewQueueItem } from "@coursemind/contracts";
 import type { ConversationRepository, SaveAnswerRecordInput } from "./conversation-repository";
 
-const conversationLog = new Map<string, ConversationLogEntry>();
-const reviewQueue = new Map<string, TeacherReviewQueueItem>();
+type CourseMindConversationGlobal = typeof globalThis & {
+  __coursemindConversationLog?: Map<string, ConversationLogEntry>;
+  __coursemindReviewQueue?: Map<string, TeacherReviewQueueItem>;
+};
+
+const conversationGlobal = globalThis as CourseMindConversationGlobal;
+const conversationLog = conversationGlobal.__coursemindConversationLog ??= new Map();
+const reviewQueue = conversationGlobal.__coursemindReviewQueue ??= new Map();
 
 export class InMemoryConversationRepository implements ConversationRepository {
   async saveAnswerRecord(input: SaveAnswerRecordInput) {

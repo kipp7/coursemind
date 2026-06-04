@@ -26,6 +26,21 @@ export const courseDocumentSchema = z.object({
 });
 export type CourseDocument = z.infer<typeof courseDocumentSchema>;
 
+export const courseDocumentCreateRequestSchema = z.object({
+  title: z.string().trim().min(1),
+  sourceType: z.enum(["pdf", "ppt", "word", "markdown", "web", "transcript"]),
+  visibility: z.enum(["student", "teacher", "admin"]),
+  actorUserId: z.string().min(1).optional(),
+  locale: appLocaleSchema.default("zh-CN"),
+});
+export type CourseDocumentCreateRequest = z.infer<typeof courseDocumentCreateRequestSchema>;
+
+export const courseDocumentCreateResponseSchema = z.object({
+  snapshot: z.lazy(() => courseSnapshotSchema),
+  document: courseDocumentSchema,
+});
+export type CourseDocumentCreateResponse = z.infer<typeof courseDocumentCreateResponseSchema>;
+
 export const citationSchema = z.object({
   documentId: z.string().min(1),
   title: z.string().min(1),
@@ -126,7 +141,11 @@ export const teacherReviewActionResponseSchema = z.object({
 });
 export type TeacherReviewActionResponse = z.infer<typeof teacherReviewActionResponseSchema>;
 
-export const auditEventTypeSchema = z.enum(["agent.answer.created", "teacher_review.updated"]);
+export const auditEventTypeSchema = z.enum([
+  "agent.answer.created",
+  "course_document.ingestion_requested",
+  "teacher_review.updated",
+]);
 export type AuditEventType = z.infer<typeof auditEventTypeSchema>;
 
 export const auditEventSeveritySchema = z.enum(["info", "warning", "critical"]);
@@ -141,7 +160,7 @@ export const auditEventSchema = z.object({
   actorUserId: z.string().min(1).optional(),
   courseId: z.string().min(1).optional(),
   conversationId: z.string().min(1).optional(),
-  targetType: z.enum(["conversation", "message", "teacher_review", "course"]),
+  targetType: z.enum(["conversation", "message", "teacher_review", "course", "course_document"]),
   targetId: z.string().min(1).optional(),
   summary: z.string().min(1),
   metadata: z.record(z.string(), z.unknown()).optional(),

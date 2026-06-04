@@ -26,6 +26,9 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - `/api/audit/events` exposes the current audit trail, and the Web demo shows recent audit events in the governance panel.
 - The Web MVP now defaults to a Chinese school-facing interface while preserving an English version through an in-page language toggle.
 - Answer requests carry a `locale` field, defaulting to `zh-CN`, so mock answers, review notes, and guardrails can match the selected UI language.
+- A mock course material ingestion boundary now exists through `/api/courses/[courseId]/documents`.
+- The Web demo can create a course material ingestion task from the knowledge base panel; new documents update the course snapshot and create a `course_document.ingestion_requested` audit event.
+- In-memory mock state is now attached to `globalThis` so Next.js dev/demo API routes share course, review, and audit state more reliably within one running process.
 
 ## Constraints
 
@@ -46,8 +49,9 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 6. Add validation to future API routes as they are introduced.
 7. Replace the in-memory audit event repository with durable storage when production persistence is introduced.
 8. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.
-9. Continue polishing Chinese school-facing copy and add formal i18n routing later if the MVP needs shareable language-specific URLs.
-10. Keep future work committed and pushed in small coherent units.
+9. Replace the mock document ingestion task with real file upload, parsing, indexing, and provider adapter handoff.
+10. Continue polishing Chinese school-facing copy and add formal i18n routing later if the MVP needs shareable language-specific URLs.
+11. Keep future work committed and pushed in small coherent units.
 
 ## Done Criteria
 
