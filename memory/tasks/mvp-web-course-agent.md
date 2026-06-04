@@ -35,6 +35,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - The Web UI has now shifted from a cluttered multi-workspace dashboard toward a ChatGPT-like course chat shell: left course/session navigation, a single central conversation flow, a fixed bottom composer, and lightweight right-side governance drawers for materials, teacher review, and audit records.
 - Frontend completion status: the main chat surface has been adapted, but the frontend is not yet complete. The route entry is now being separated from the large client component so later work can extract sidebar, conversation, composer, and governance panel components.
 - Frontend component extraction has started: `CourseChatSidebar` now owns the left course/session/governance navigation while `CourseChatClient` keeps application state, API calls, conversation, composer, and governance panel orchestration.
+- Frontend component extraction continued: `CourseChatConversation` now owns the central empty state, message list, loading state, error line, and bottom composer while `CourseChatClient` keeps course, provider, review, audit, and document-ingestion orchestration.
 
 ## Constraints
 

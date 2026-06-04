@@ -15,7 +15,6 @@ import type {
   TeacherReviewQueueResponse,
 } from "@coursemind/contracts";
 import {
-  ArrowUp,
   BarChart3,
   Check,
   FilePlus2,
@@ -27,16 +26,9 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CourseChatConversation } from "./course-chat-conversation";
 import { CourseChatSidebar } from "./course-chat-sidebar";
-
-type WorkspacePanel = "materials" | "teacher" | "audit";
-
-type ChatMessage = {
-  id: string;
-  kind: "user" | "assistant";
-  text: string;
-  sources?: string[];
-};
+import type { ChatMessage, WorkspacePanel } from "./course-chat-types";
 
 const locales: AppLocale[] = ["zh-CN", "en-US"];
 const sourceTypes: CourseDocumentCreateRequest["sourceType"][] = ["pdf", "ppt", "word", "markdown", "web", "transcript"];
@@ -651,78 +643,17 @@ export default function CourseChatClient() {
           </div>
         </header>
 
-        <section className="conversation-shell">
-          <div className="conversation-scroll" aria-live="polite">
-            {messages.length === 0 && !isLoading ? (
-              <div className="chat-empty-state">
-                <div className="empty-mark">CM</div>
-                <h2>{locale === "zh-CN" ? "今天想了解哪门课？" : "What course question can I help with?"}</h2>
-                <p>{text.headers.assistant.body}</p>
-                <div className="suggestion-grid" aria-label={text.quickPrompts}>
-                  {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
-                    <button key={item} onClick={() => setPrompt(text.prompts[item])} type="button">
-                      <span>{text.roles[item]}</span>
-                      <strong>{text.prompts[item]}</strong>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {messages.map((message) => (
-              <article className={message.kind === "user" ? "message user-message" : "message assistant-message"} key={message.id}>
-                <div className="message-avatar">{message.kind === "user" ? text.roles[role].slice(0, 1) : "CM"}</div>
-                <div className="message-body">
-                  <span>{message.kind === "user" ? text.roles[role] : "CourseMind"}</span>
-                  <p>{message.text}</p>
-                  {message.sources ? (
-                    <div className="source-list">
-                      {message.sources.map((source) => (
-                        <button key={source} type="button">
-                          {source}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-
-            {isLoading ? (
-              <article className="message assistant-message">
-                <div className="message-avatar">CM</div>
-                <div className="message-body">
-                  <span>CourseMind</span>
-                  <p className="thinking">{text.assistant.thinking}</p>
-                </div>
-              </article>
-            ) : null}
-          </div>
-
-          {error ? <p className="error-line">{error}</p> : null}
-
-          <form className="composer" onSubmit={handleSubmit}>
-            <textarea
-              aria-label={text.assistant.askLabel}
-              onChange={(event) => setPrompt(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  event.currentTarget.form?.requestSubmit();
-                }
-              }}
-              placeholder={text.assistant.placeholder}
-              rows={3}
-              value={prompt}
-            />
-            <div className="composer-footer">
-              <span>{text.providerPath}</span>
-              <button className="send-button" disabled={isLoading || !prompt.trim()} type="submit" aria-label={text.assistant.send}>
-                <ArrowUp aria-hidden="true" />
-              </button>
-            </div>
-          </form>
-        </section>
+        <CourseChatConversation
+          error={error}
+          handleSubmit={handleSubmit}
+          isLoading={isLoading}
+          locale={locale}
+          messages={messages}
+          prompt={prompt}
+          role={role}
+          setPrompt={setPrompt}
+          text={text}
+        />
       </main>
 
       {activePanel ? (

@@ -2,8 +2,7 @@
 
 import type { AppLocale, CourseRole, CourseSnapshot } from "@coursemind/contracts";
 import { BarChart3, Languages, Library, MessagesSquare, ShieldCheck, SlidersHorizontal, SquarePen } from "lucide-react";
-
-type WorkspacePanel = "materials" | "teacher" | "audit";
+import type { WorkspacePanel } from "./course-chat-types";
 
 type SidebarText = {
   appSubtitle: string;
