@@ -6,6 +6,15 @@ Use open or replaceable platforms early, but keep CourseMind's school-specific r
 
 ## RAG Providers
 
+CourseMind now has a first code-level RAG gateway boundary in `services/api/src/rag`.
+
+Current behavior:
+
+- `COURSEMIND_RAG_PROVIDER` defaults to `mock`.
+- `mock` returns demo citations from course documents without external calls.
+- `dify` and `ragflow` are reserved provider IDs, but they intentionally fail until their adapters are implemented and configured.
+- The Web app should continue calling CourseMind's own API routes, never provider APIs directly.
+
 ### Dify
 
 Best for fast MVP assembly, workflow design, knowledge base demos, and non-engineer configuration.
@@ -25,6 +34,18 @@ Use when:
 - course documents are complex
 - OCR/table parsing matters
 - retrieval quality becomes a visible product risk
+
+## Adapter Contract
+
+Every RAG provider should implement the same application-facing contract:
+
+```text
+course id + role + question + visible document metadata
+  -> citations
+  -> retrieval trace
+```
+
+Provider adapters may use different external APIs, but they must return CourseMind citations and traces. Role filtering and school policy must remain in the application layer unless a later ADR explicitly moves part of that responsibility.
 
 ## Model Providers
 

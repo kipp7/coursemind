@@ -1,4 +1,4 @@
-import { answerCourseQuestion } from "@coursemind/api";
+import { answerCourseQuestion, RagProviderConfigurationError } from "@coursemind/api";
 import type { AnswerRequest, CourseRole } from "@coursemind/contracts";
 import { NextResponse } from "next/server";
 
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json(response);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to answer question";
-    return NextResponse.json({ error: message }, { status: 404 });
+    const status = error instanceof RagProviderConfigurationError ? 503 : 404;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -3,8 +3,8 @@ import type {
   AnswerResponse,
   Citation,
   CourseSnapshot,
-  RagTrace,
 } from "@coursemind/contracts";
+import { createRagGateway } from "../rag/provider-registry";
 
 const courseSnapshots: CourseSnapshot[] = [
   {
@@ -90,20 +90,18 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     throw new Error(`Unknown course: ${request.courseId}`);
   }
 
-  const citations = retrieveCourseContext(request, snapshot);
+  const ragGateway = createRagGateway();
+  const retrieval = await ragGateway.retrieveCourseContext({
+    courseId: snapshot.course.id,
+    role: request.role,
+    question: request.question,
+    documents: snapshot.documents,
+  });
+  const citations = retrieval.citations;
   const answer = composeAnswer(request, snapshot, citations);
   const now = new Date().toISOString();
   const conversationId = `conv-${request.courseId}-demo`;
   const messageId = `msg-${Date.now()}`;
-  const ragTrace: RagTrace = {
-    provider: "mock",
-    query: request.question,
-    retrievedDocumentIds: citations.map((citation) => citation.documentId),
-    retrievalPolicy:
-      request.role === "teacher" || request.role === "admin"
-        ? "teacher_private_documents"
-        : "course_visible_documents",
-  };
 
   return {
     conversationId,
@@ -116,7 +114,7 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
       createdAt: now,
     },
     citations,
-    ragTrace,
+    ragTrace: retrieval.trace,
     review: {
       id: `review-${messageId}`,
       messageId,
@@ -130,38 +128,6 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
       "Avoid directly completing graded student submissions.",
     ],
   };
-}
-
-function retrieveCourseContext(request: AnswerRequest, snapshot: CourseSnapshot): Citation[] {
-  const visibleDocuments = snapshot.documents.filter((document) => {
-    if (request.role === "admin" || request.role === "teacher") {
-      return document.ingestionStatus !== "blocked";
-    }
-
-    return document.visibility === "student" && document.ingestionStatus === "indexed";
-  });
-
-  return visibleDocuments.slice(0, 3).map((document, index) => ({
-    documentId: document.id,
-    title: document.title,
-    locator: index === 0 ? "core section" : `chunk ${index + 1}`,
-    excerpt: buildExcerpt(request.question, document.title),
-    confidence: Number((0.86 - index * 0.08).toFixed(2)),
-  }));
-}
-
-function buildExcerpt(question: string, title: string) {
-  const lower = question.toLowerCase();
-
-  if (lower.includes("fine") || lower.includes("tuning") || lower.includes("rag")) {
-    return `${title} says frequently changing course content should be handled through retrieval before fine-tuning.`;
-  }
-
-  if (lower.includes("homework") || lower.includes("rubric") || lower.includes("grade")) {
-    return `${title} asks the assistant to explain grading criteria without replacing the student's own work.`;
-  }
-
-  return `${title} contains course definitions, classroom rules, and teacher notes relevant to the question.`;
 }
 
 function composeAnswer(request: AnswerRequest, snapshot: CourseSnapshot, citations: Citation[]) {

@@ -13,7 +13,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 ## Completed Work
 
 - Repository: `kipp7/coursemind`, public GitHub remote at `https://github.com/kipp7/coursemind`.
-- Latest pushed commit before this checkpoint: `53e8926 feat: add typed api vertical slice`.
+- Latest pushed commit before this checkpoint was originally `53e8926 feat: add typed api vertical slice`; later work added `e617320 docs: add desktop resume checkpoint`.
 - GitHub Actions `quality-gates` passed for that commit.
 - CourseMind is a school-facing course agent platform, not a disposable chatbot demo.
 - The MVP technical direction is Next.js App Router Web first, RAG first, fine-tuning later.
@@ -22,6 +22,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 - A lightweight application API boundary was added in `services/api`.
 - Next.js API routes were added for `/api/courses` and `/api/agent/answer`.
 - The Web UI now calls CourseMind's own API and displays citations, mock RAG trace, guardrails, and teacher review state.
+- A first RAG gateway code boundary now exists in `services/api/src/rag`, with `mock` as the default provider.
 - Memory decisions currently recorded:
   - `memory/decisions/0001-rag-first-platform-architecture.md`
   - `memory/decisions/0002-github-first-development-workflow.md`
@@ -43,7 +44,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 
 ## Next Steps
 
-- Add explicit RAG provider adapter interfaces before connecting Dify or RAGFlow.
+- Implement Dify and RAGFlow adapters behind the existing RAG gateway interface.
 - Decide whether to add Zod for runtime contract validation at API boundaries.
 - Persist conversation messages and teacher review records after the mock flow is stable.
 - Localize the demo UI copy for a Chinese school-facing presentation.
