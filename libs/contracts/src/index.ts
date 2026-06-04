@@ -81,6 +81,34 @@ export const answerResponseSchema = z.object({
 });
 export type AnswerResponse = z.infer<typeof answerResponseSchema>;
 
+export const conversationLogEntrySchema = z.object({
+  conversationId: z.string().min(1),
+  courseId: z.string().min(1),
+  role: courseRoleSchema,
+  messages: z.array(conversationMessageSchema),
+  citations: z.array(citationSchema),
+  ragTrace: ragTraceSchema,
+  review: teacherReviewSchema,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type ConversationLogEntry = z.infer<typeof conversationLogEntrySchema>;
+
+export const teacherReviewQueueItemSchema = z.object({
+  review: teacherReviewSchema,
+  course: courseSchema,
+  conversationId: z.string().min(1),
+  answerMessage: conversationMessageSchema,
+  citations: z.array(citationSchema),
+  ragTrace: ragTraceSchema,
+});
+export type TeacherReviewQueueItem = z.infer<typeof teacherReviewQueueItemSchema>;
+
+export const teacherReviewQueueResponseSchema = z.object({
+  items: z.array(teacherReviewQueueItemSchema),
+});
+export type TeacherReviewQueueResponse = z.infer<typeof teacherReviewQueueResponseSchema>;
+
 export const courseSnapshotSchema = z.object({
   course: courseSchema,
   documents: z.array(courseDocumentSchema),

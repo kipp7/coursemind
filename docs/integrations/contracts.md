@@ -13,6 +13,14 @@ Current runtime validation:
 - Invalid requests return `400` with field-level details.
 - Provider configuration failures return `503`.
 
+Conversation and review DTOs now include:
+
+- `ConversationLogEntry`
+- `TeacherReviewQueueItem`
+- `TeacherReviewQueueResponse`
+
+These represent the mock persistence boundary for the MVP. They should be preserved when the in-memory repository is replaced by real database storage.
+
 ## Course
 
 ```ts

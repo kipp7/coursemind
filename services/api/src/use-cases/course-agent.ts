@@ -2,9 +2,13 @@ import type {
   AnswerRequest,
   AnswerResponse,
   Citation,
+  ConversationMessage,
   CourseSnapshot,
+  TeacherReview,
+  TeacherReviewQueueItem,
 } from "@coursemind/contracts";
 import { createRagGateway } from "../rag/provider-registry";
+import { conversationRepository } from "../repositories/in-memory-conversation-repository";
 
 const courseSnapshots: CourseSnapshot[] = [
   {
@@ -101,33 +105,57 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
   const answer = composeAnswer(request, snapshot, citations);
   const now = new Date().toISOString();
   const conversationId = `conv-${request.courseId}-demo`;
+  const userMessageId = `msg-user-${Date.now()}`;
   const messageId = `msg-${Date.now()}`;
+  const userMessage: ConversationMessage = {
+    id: userMessageId,
+    conversationId,
+    role: request.role,
+    content: request.question,
+    createdAt: now,
+  };
+  const answerMessage: ConversationMessage = {
+    id: messageId,
+    conversationId,
+    role: "assistant",
+    content: answer,
+    citations,
+    createdAt: now,
+  };
+  const review: TeacherReview = {
+    id: `review-${messageId}`,
+    messageId,
+    status: "pending",
+    rubricNotes: "Awaiting teacher confirmation for citation coverage and course policy fit.",
+    createdAt: now,
+  };
+
+  await conversationRepository.saveAnswerRecord({
+    request,
+    course: snapshot.course,
+    userMessage,
+    answerMessage,
+    citations,
+    ragTrace: retrieval.trace,
+    review,
+  });
 
   return {
     conversationId,
-    answerMessage: {
-      id: messageId,
-      conversationId,
-      role: "assistant",
-      content: answer,
-      citations,
-      createdAt: now,
-    },
+    answerMessage,
     citations,
     ragTrace: retrieval.trace,
-    review: {
-      id: `review-${messageId}`,
-      messageId,
-      status: "pending",
-      rubricNotes: "Awaiting teacher confirmation for citation coverage and course policy fit.",
-      createdAt: now,
-    },
+    review,
     guardrails: [
       "Answer only from visible course materials.",
       "Show citations and admit when course evidence is missing.",
       "Avoid directly completing graded student submissions.",
     ],
   };
+}
+
+export async function listTeacherReviewQueue(): Promise<TeacherReviewQueueItem[]> {
+  return conversationRepository.listTeacherReviewQueue();
 }
 
 function composeAnswer(request: AnswerRequest, snapshot: CourseSnapshot, citations: Citation[]) {

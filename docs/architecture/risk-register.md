@@ -9,7 +9,7 @@
 | Academic integrity failures | Agent may complete graded work directly | Teaching policy layer and refusal rules | Documented, not implemented |
 | Weak document parsing | Poor citations or missed course context | Evaluate Dify vs RAGFlow with real course samples | Dify skeleton added, real samples pending |
 | Cost growth | Model usage may become expensive | Usage logs, caching, model tiering, rate limits | Not implemented |
-| Teacher trust gap | Teachers may reject unreviewed answers | Teacher correction/review workflow | UI concept only |
+| Teacher trust gap | Teachers may reject unreviewed answers | Teacher correction/review workflow | Mock review queue added |
 | Public repo hygiene drift | Later commits may add secrets or private files | GitHub Actions quality gates and GitHub-first workflow | Added |
 
 ## Review Cadence

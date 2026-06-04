@@ -20,6 +20,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - A first RAG gateway adapter boundary exists in `services/api/src/rag`; the course-agent use case now depends on `RagGateway` instead of inline retrieval logic.
 - Shared contracts now use Zod schemas, and `/api/agent/answer` validates request and response payloads at runtime.
 - A Dify RAG adapter skeleton exists in `services/api/src/rag/dify-rag-gateway.ts`; it requires server-side Dify environment variables before real use.
+- A mock conversation/review persistence boundary exists in `services/api/src/repositories`; answer generation now stores user messages, assistant messages, citations, RAG trace, and pending teacher reviews for the running server process.
 
 ## Constraints
 
@@ -38,7 +39,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 4. Test the Dify adapter against a real Dify app and course knowledge base when credentials are available.
 5. Implement the RAGFlow adapter behind the existing RAG gateway interface.
 6. Add validation to future API routes as they are introduced.
-7. Persist conversation messages and teacher review records.
+7. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.
 8. Localize the Web demo copy for the intended Chinese school audience.
 9. Keep future work committed and pushed in small coherent units.
 

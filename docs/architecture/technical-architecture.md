@@ -97,6 +97,14 @@ Expected data domains:
 
 MVP can mock or defer parts of storage, but the architecture should preserve these boundaries.
 
+The MVP now has a mock persistence boundary in `services/api/src/repositories`:
+
+- `ConversationRepository` defines the application-facing storage interface.
+- `InMemoryConversationRepository` stores conversation messages, citations, RAG traces, and teacher review queue items for the running server process.
+- `/api/teacher/reviews` exposes the current teacher review queue for the Web demo.
+
+This is not durable database storage. It exists to prove the school review and audit boundary before introducing Prisma/PostgreSQL or another production store.
+
 ## RAG Before Fine-Tuning
 
 RAG is the first implementation priority because course materials change frequently. Fine-tuning should wait until the project has teacher-approved examples, review records, and stable rubric data.

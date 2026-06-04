@@ -25,6 +25,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 - A first RAG gateway code boundary now exists in `services/api/src/rag`, with `mock` as the default provider.
 - Shared contracts now use Zod schemas, and the answer API validates request and response payloads at runtime.
 - A Dify adapter skeleton now exists; real Dify use requires server-side `COURSEMIND_DIFY_API_BASE_URL` and `COURSEMIND_DIFY_APP_AUTH`.
+- A mock persistence boundary now records conversation messages, citations, RAG traces, and pending teacher review items for the running server process.
 - Memory decisions currently recorded:
   - `memory/decisions/0001-rag-first-platform-architecture.md`
   - `memory/decisions/0002-github-first-development-workflow.md`
@@ -49,6 +50,7 @@ permalink: 21-agent/memory/checkpoints/2026-06-04-desktop-resume
 - Test the Dify adapter against a real Dify app and course knowledge base when credentials are available.
 - Implement the RAGFlow adapter behind the existing RAG gateway interface.
 - Extend runtime validation to future API routes.
+- Replace in-memory persistence with a durable database repository when the MVP needs retained history across restarts.
 - Persist conversation messages and teacher review records after the mock flow is stable.
 - Localize the demo UI copy for a Chinese school-facing presentation.
 - Keep the GitHub-first cadence: run `pnpm check`, commit coherent changes, push, and verify Actions.

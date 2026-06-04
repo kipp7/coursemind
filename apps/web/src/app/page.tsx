@@ -1,6 +1,11 @@
 "use client";
 
-import type { AnswerResponse, CourseRole, CourseSnapshot } from "@coursemind/contracts";
+import type {
+  AnswerResponse,
+  CourseRole,
+  CourseSnapshot,
+  TeacherReviewQueueResponse,
+} from "@coursemind/contracts";
 import {
   ArrowRight,
   BarChart3,
@@ -62,6 +67,7 @@ export default function Home() {
     },
   ]);
   const [lastResponse, setLastResponse] = useState<AnswerResponse | null>(null);
+  const [reviewQueueCount, setReviewQueueCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,6 +94,12 @@ export default function Home() {
       mounted = false;
     };
   }, []);
+
+  async function refreshReviewQueue() {
+    const response = await fetch("/api/teacher/reviews");
+    const data = (await response.json()) as TeacherReviewQueueResponse;
+    setReviewQueueCount(data.items.length);
+  }
 
   const selectedCourse = useMemo(
     () => courses.find((item) => item.course.id === courseId) ?? courses[0],
@@ -143,6 +155,7 @@ export default function Home() {
       }
 
       setLastResponse(data);
+      await refreshReviewQueue();
       setMessages((current) => [
         ...current,
         {
@@ -335,8 +348,8 @@ export default function Home() {
                   <dd>{selectedCourse?.indexedChunks.toLocaleString() ?? 0}</dd>
                 </div>
                 <div>
-                  <dt>Review</dt>
-                  <dd>{selectedCourse?.pendingReviewCount ?? 0}</dd>
+                  <dt>Queue</dt>
+                  <dd>{reviewQueueCount}</dd>
                 </div>
               </dl>
             </section>
@@ -346,9 +359,9 @@ export default function Home() {
               <ul className="roadmap-list">
                 <li className="done">Web calls CourseMind API</li>
                 <li className="done">Shared DTO contracts</li>
-                <li className="active">Mock RAG adapter</li>
-                <li>Teacher review persistence</li>
-                <li>Dify / RAGFlow provider swap</li>
+                <li className="done">RAG gateway adapter</li>
+                <li className="active">Teacher review persistence</li>
+                <li>Dify provider skeleton</li>
               </ul>
             </section>
 
