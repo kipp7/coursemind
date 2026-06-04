@@ -1,4 +1,5 @@
 import type {
+  AuditEvent,
   AnswerRequest,
   AnswerResponse,
   Citation,
@@ -9,6 +10,7 @@ import type {
   TeacherReviewQueueItem,
 } from "@coursemind/contracts";
 import { createRagGateway } from "../rag/provider-registry";
+import { auditEventRepository } from "../repositories/in-memory-audit-event-repository";
 import { conversationRepository } from "../repositories/in-memory-conversation-repository";
 
 const courseSnapshots: CourseSnapshot[] = [
@@ -140,6 +142,22 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     ragTrace: retrieval.trace,
     review,
   });
+  await auditEventRepository.recordEvent({
+    type: "agent.answer.created",
+    severity: citations.length > 0 ? "info" : "warning",
+    actorRole: request.role,
+    courseId: snapshot.course.id,
+    conversationId,
+    targetType: "message",
+    targetId: answerMessage.id,
+    summary: `Course agent answer created for ${snapshot.course.title}.`,
+    metadata: {
+      citationCount: citations.length,
+      provider: retrieval.trace.provider,
+      reviewId: review.id,
+      retrievedDocumentIds: retrieval.trace.retrievedDocumentIds,
+    },
+  });
 
   return {
     conversationId,
@@ -160,7 +178,31 @@ export async function listTeacherReviewQueue(): Promise<TeacherReviewQueueItem[]
 }
 
 export async function updateTeacherReview(reviewId: string, action: TeacherReviewAction) {
-  return conversationRepository.updateTeacherReview(reviewId, action);
+  const item = await conversationRepository.updateTeacherReview(reviewId, action);
+
+  await auditEventRepository.recordEvent({
+    type: "teacher_review.updated",
+    severity: action.status === "rejected" ? "warning" : "info",
+    actorRole: "teacher",
+    actorUserId: action.reviewerUserId,
+    courseId: item.course.id,
+    conversationId: item.conversationId,
+    targetType: "teacher_review",
+    targetId: reviewId,
+    summary: `Teacher review marked ${action.status} for ${item.course.title}.`,
+    metadata: {
+      status: action.status,
+      hasCorrection: Boolean(action.correction),
+      hasRubricNotes: Boolean(action.rubricNotes),
+      messageId: item.answerMessage.id,
+    },
+  });
+
+  return item;
+}
+
+export async function listAuditEvents(): Promise<AuditEvent[]> {
+  return auditEventRepository.listEvents();
 }
 
 function composeAnswer(request: AnswerRequest, snapshot: CourseSnapshot, citations: Citation[]) {

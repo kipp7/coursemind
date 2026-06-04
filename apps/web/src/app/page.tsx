@@ -1,6 +1,8 @@
 "use client";
 
 import type {
+  AuditEvent,
+  AuditEventListResponse,
   AnswerResponse,
   CourseRole,
   CourseSnapshot,
@@ -68,6 +70,7 @@ export default function Home() {
     },
   ]);
   const [lastResponse, setLastResponse] = useState<AnswerResponse | null>(null);
+  const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [reviewQueueCount, setReviewQueueCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +93,11 @@ export default function Home() {
         setError("Could not load demo courses.");
       }
     });
+    refreshAuditEvents().catch(() => {
+      if (mounted) {
+        setAuditEvents([]);
+      }
+    });
 
     return () => {
       mounted = false;
@@ -100,6 +108,12 @@ export default function Home() {
     const response = await fetch("/api/teacher/reviews");
     const data = (await response.json()) as TeacherReviewQueueResponse;
     setReviewQueueCount(data.items.length);
+  }
+
+  async function refreshAuditEvents() {
+    const response = await fetch("/api/audit/events");
+    const data = (await response.json()) as AuditEventListResponse;
+    setAuditEvents(data.items);
   }
 
   async function handleReviewAction(action: TeacherReviewAction) {
@@ -123,6 +137,7 @@ export default function Home() {
 
     setLastResponse((current) => current ? { ...current, review: updatedReview } : current);
     await refreshReviewQueue();
+    await refreshAuditEvents();
   }
 
   const selectedCourse = useMemo(
@@ -180,6 +195,7 @@ export default function Home() {
 
       setLastResponse(data);
       await refreshReviewQueue();
+      await refreshAuditEvents();
       setMessages((current) => [
         ...current,
         {
@@ -384,8 +400,31 @@ export default function Home() {
                 <li className="done">Web calls CourseMind API</li>
                 <li className="done">Shared DTO contracts</li>
                 <li className="done">RAG gateway adapter</li>
-                <li className="active">Teacher review persistence</li>
+                <li className="done">Teacher review persistence</li>
+                <li className="active">Audit event boundary</li>
                 <li>Dify provider skeleton</li>
+              </ul>
+            </section>
+
+            <section className="inspector-block">
+              <div className="panel-heading compact">
+                <h2>Audit events</h2>
+                <span className="sync-badge">{auditEvents.length}</span>
+              </div>
+              <ul className="audit-list">
+                {auditEvents.length > 0 ? (
+                  auditEvents.slice(0, 4).map((event) => (
+                    <li key={event.id}>
+                      <strong>{event.type}</strong>
+                      <span>{event.summary}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li>
+                    <strong>No events yet</strong>
+                    <span>Ask a question to create the first audit record.</span>
+                  </li>
+                )}
               </ul>
             </section>
 

@@ -469,6 +469,7 @@ h2 {
 }
 
 .citation-list,
+.audit-list,
 .roadmap-list {
   display: grid;
   gap: 12px;
@@ -487,6 +488,28 @@ h2 {
 .citation-list span {
   color: var(--muted);
   font-size: 13px;
+}
+
+.audit-list li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.audit-list li:last-child {
+  border-bottom: 0;
+}
+
+.audit-list strong {
+  color: var(--accent-dark);
+  font-size: 12px;
+}
+
+.audit-list span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .knowledge-meter {

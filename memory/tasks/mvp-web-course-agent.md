@@ -22,6 +22,8 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - A Dify RAG adapter skeleton exists in `services/api/src/rag/dify-rag-gateway.ts`; it requires server-side Dify environment variables before real use.
 - A mock conversation/review persistence boundary exists in `services/api/src/repositories`; answer generation now stores user messages, assistant messages, citations, RAG trace, and pending teacher reviews for the running server process.
 - Teacher review actions now exist for approve, correct, and reject through `/api/teacher/reviews/[reviewId]`.
+- A mock audit event boundary now exists in `services/api/src/repositories`; answer generation and teacher review actions record audit events for the running server process.
+- `/api/audit/events` exposes the current audit trail, and the Web demo shows recent audit events in the governance panel.
 
 ## Constraints
 
@@ -40,7 +42,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 4. Test the Dify adapter against a real Dify app and course knowledge base when credentials are available.
 5. Implement the RAGFlow adapter behind the existing RAG gateway interface.
 6. Add validation to future API routes as they are introduced.
-7. Add durable audit event semantics when replacing the in-memory repository.
+7. Replace the in-memory audit event repository with durable storage when production persistence is introduced.
 8. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.
 9. Localize the Web demo copy for the intended Chinese school audience.
 10. Keep future work committed and pushed in small coherent units.

@@ -122,6 +122,33 @@ export const teacherReviewActionResponseSchema = z.object({
 });
 export type TeacherReviewActionResponse = z.infer<typeof teacherReviewActionResponseSchema>;
 
+export const auditEventTypeSchema = z.enum(["agent.answer.created", "teacher_review.updated"]);
+export type AuditEventType = z.infer<typeof auditEventTypeSchema>;
+
+export const auditEventSeveritySchema = z.enum(["info", "warning", "critical"]);
+export type AuditEventSeverity = z.infer<typeof auditEventSeveritySchema>;
+
+export const auditEventSchema = z.object({
+  id: z.string().min(1),
+  type: auditEventTypeSchema,
+  severity: auditEventSeveritySchema,
+  occurredAt: z.string().datetime(),
+  actorRole: courseRoleSchema,
+  actorUserId: z.string().min(1).optional(),
+  courseId: z.string().min(1).optional(),
+  conversationId: z.string().min(1).optional(),
+  targetType: z.enum(["conversation", "message", "teacher_review", "course"]),
+  targetId: z.string().min(1).optional(),
+  summary: z.string().min(1),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+export type AuditEvent = z.infer<typeof auditEventSchema>;
+
+export const auditEventListResponseSchema = z.object({
+  items: z.array(auditEventSchema),
+});
+export type AuditEventListResponse = z.infer<typeof auditEventListResponseSchema>;
+
 export const courseSnapshotSchema = z.object({
   course: courseSchema,
   documents: z.array(courseDocumentSchema),
