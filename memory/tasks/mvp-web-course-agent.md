@@ -24,6 +24,8 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - Teacher review actions now exist for approve, correct, and reject through `/api/teacher/reviews/[reviewId]`.
 - A mock audit event boundary now exists in `services/api/src/repositories`; answer generation and teacher review actions record audit events for the running server process.
 - `/api/audit/events` exposes the current audit trail, and the Web demo shows recent audit events in the governance panel.
+- The Web MVP now defaults to a Chinese school-facing interface while preserving an English version through an in-page language toggle.
+- Answer requests carry a `locale` field, defaulting to `zh-CN`, so mock answers, review notes, and guardrails can match the selected UI language.
 
 ## Constraints
 
@@ -44,7 +46,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 6. Add validation to future API routes as they are introduced.
 7. Replace the in-memory audit event repository with durable storage when production persistence is introduced.
 8. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.
-9. Localize the Web demo copy for the intended Chinese school audience.
+9. Continue polishing Chinese school-facing copy and add formal i18n routing later if the MVP needs shareable language-specific URLs.
 10. Keep future work committed and pushed in small coherent units.
 
 ## Done Criteria

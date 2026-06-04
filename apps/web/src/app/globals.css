@@ -170,6 +170,39 @@ button {
   background: var(--accent);
 }
 
+.locale-switcher {
+  display: grid;
+  grid-template-columns: 24px repeat(2, 1fr);
+  gap: 4px;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.locale-switcher svg {
+  width: 17px;
+  height: 17px;
+  margin-left: 5px;
+  color: var(--muted);
+}
+
+.locale-tab {
+  min-height: 34px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.locale-tab.active {
+  color: #fff;
+  background: var(--ink);
+}
+
 .status-panel {
   display: flex;
   align-items: flex-start;
@@ -630,7 +663,13 @@ h2 {
   gap: 10px;
 }
 
-.architecture-flow span {
+.architecture-flow-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.architecture-flow-item > span {
   padding: 10px 12px;
   border-radius: 8px;
   background: #eee7db;

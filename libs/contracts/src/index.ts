@@ -3,6 +3,9 @@ import { z } from "zod";
 export const courseRoleSchema = z.enum(["student", "teacher", "admin"]);
 export type CourseRole = z.infer<typeof courseRoleSchema>;
 
+export const appLocaleSchema = z.enum(["zh-CN", "en-US"]);
+export type AppLocale = z.infer<typeof appLocaleSchema>;
+
 export const courseSchema = z.object({
   id: z.string().min(1),
   schoolId: z.string().min(1),
@@ -68,6 +71,7 @@ export const answerRequestSchema = z.object({
   courseId: z.string().min(1),
   role: courseRoleSchema,
   question: z.string().trim().min(1),
+  locale: appLocaleSchema.default("zh-CN"),
 });
 export type AnswerRequest = z.infer<typeof answerRequestSchema>;
 
