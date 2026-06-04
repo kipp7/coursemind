@@ -5,6 +5,7 @@ import type {
   ConversationMessage,
   CourseSnapshot,
   TeacherReview,
+  TeacherReviewAction,
   TeacherReviewQueueItem,
 } from "@coursemind/contracts";
 import { createRagGateway } from "../rag/provider-registry";
@@ -156,6 +157,10 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
 
 export async function listTeacherReviewQueue(): Promise<TeacherReviewQueueItem[]> {
   return conversationRepository.listTeacherReviewQueue();
+}
+
+export async function updateTeacherReview(reviewId: string, action: TeacherReviewAction) {
+  return conversationRepository.updateTeacherReview(reviewId, action);
 }
 
 function composeAnswer(request: AnswerRequest, snapshot: CourseSnapshot, citations: Citation[]) {

@@ -109,6 +109,19 @@ export const teacherReviewQueueResponseSchema = z.object({
 });
 export type TeacherReviewQueueResponse = z.infer<typeof teacherReviewQueueResponseSchema>;
 
+export const teacherReviewActionSchema = z.object({
+  status: z.enum(["approved", "corrected", "rejected"]),
+  reviewerUserId: z.string().min(1).optional(),
+  correction: z.string().trim().min(1).optional(),
+  rubricNotes: z.string().trim().min(1).optional(),
+});
+export type TeacherReviewAction = z.infer<typeof teacherReviewActionSchema>;
+
+export const teacherReviewActionResponseSchema = z.object({
+  item: teacherReviewQueueItemSchema,
+});
+export type TeacherReviewActionResponse = z.infer<typeof teacherReviewActionResponseSchema>;
+
 export const courseSnapshotSchema = z.object({
   course: courseSchema,
   documents: z.array(courseDocumentSchema),

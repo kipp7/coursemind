@@ -1,4 +1,9 @@
-export { answerCourseQuestion, getCourseSnapshots, listTeacherReviewQueue } from "./use-cases/course-agent";
+export {
+  answerCourseQuestion,
+  getCourseSnapshots,
+  listTeacherReviewQueue,
+  updateTeacherReview,
+} from "./use-cases/course-agent";
 export { createRagGateway, RagProviderConfigurationError } from "./rag/provider-registry";
 export { DifyRagGateway } from "./rag/dify-rag-gateway";
 export type { DifyRagGatewayConfig } from "./rag/dify-rag-gateway";

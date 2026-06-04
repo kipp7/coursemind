@@ -4,6 +4,7 @@ import type {
   AnswerResponse,
   CourseRole,
   CourseSnapshot,
+  TeacherReviewAction,
   TeacherReviewQueueResponse,
 } from "@coursemind/contracts";
 import {
@@ -99,6 +100,29 @@ export default function Home() {
     const response = await fetch("/api/teacher/reviews");
     const data = (await response.json()) as TeacherReviewQueueResponse;
     setReviewQueueCount(data.items.length);
+  }
+
+  async function handleReviewAction(action: TeacherReviewAction) {
+    if (!lastResponse) {
+      return;
+    }
+
+    const response = await fetch(`/api/teacher/reviews/${lastResponse.review.id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(action),
+    });
+    const data = (await response.json()) as { item?: { review: AnswerResponse["review"] }; error?: string };
+
+    if (!response.ok || data.error || !data.item) {
+      setError(data.error ?? "Teacher review update failed");
+      return;
+    }
+
+    const updatedReview = data.item.review;
+
+    setLastResponse((current) => current ? { ...current, review: updatedReview } : current);
+    await refreshReviewQueue();
   }
 
   const selectedCourse = useMemo(
@@ -372,6 +396,41 @@ export default function Home() {
               </div>
               <p>{lastResponse?.review.rubricNotes ?? "Next answer will create a pending teacher review record."}</p>
               <span>{lastResponse ? `Provider: ${lastResponse.ragTrace.provider}` : "Provider: mock"}</span>
+              {lastResponse ? (
+                <div className="review-actions" aria-label="Teacher review actions">
+                  <button
+                    onClick={() => handleReviewAction({ status: "approved", reviewerUserId: "teacher-demo" })}
+                    type="button"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleReviewAction({
+                        status: "corrected",
+                        reviewerUserId: "teacher-demo",
+                        correction: "Add one more classroom example before publishing.",
+                        rubricNotes: "Teacher requested a more concrete explanation.",
+                      })
+                    }
+                    type="button"
+                  >
+                    Correct
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleReviewAction({
+                        status: "rejected",
+                        reviewerUserId: "teacher-demo",
+                        rubricNotes: "Rejected for the demo review workflow.",
+                      })
+                    }
+                    type="button"
+                  >
+                    Reject
+                  </button>
+                </div>
+              ) : null}
             </section>
           </aside>
         </section>

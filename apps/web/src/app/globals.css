@@ -574,6 +574,24 @@ h2 {
   font-weight: 800;
 }
 
+.review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.review-actions button {
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--accent-dark);
+  border: 1px solid rgba(15, 122, 104, 0.24);
+  border-radius: 8px;
+  background: rgba(15, 122, 104, 0.08);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .architecture-band {
   display: grid;
   grid-template-columns: 0.9fr 1.4fr;

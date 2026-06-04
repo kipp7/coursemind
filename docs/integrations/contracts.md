@@ -18,6 +18,8 @@ Conversation and review DTOs now include:
 - `ConversationLogEntry`
 - `TeacherReviewQueueItem`
 - `TeacherReviewQueueResponse`
+- `TeacherReviewAction`
+- `TeacherReviewActionResponse`
 
 These represent the mock persistence boundary for the MVP. They should be preserved when the in-memory repository is replaced by real database storage.
 

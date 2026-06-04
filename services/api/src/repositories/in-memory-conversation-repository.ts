@@ -1,4 +1,4 @@
-import type { ConversationLogEntry, TeacherReviewQueueItem } from "@coursemind/contracts";
+import type { ConversationLogEntry, TeacherReviewAction, TeacherReviewQueueItem } from "@coursemind/contracts";
 import type { ConversationRepository, SaveAnswerRecordInput } from "./conversation-repository";
 
 const conversationLog = new Map<string, ConversationLogEntry>();
@@ -37,6 +37,38 @@ export class InMemoryConversationRepository implements ConversationRepository {
     return Array.from(reviewQueue.values()).sort((left, right) =>
       right.review.createdAt.localeCompare(left.review.createdAt),
     );
+  }
+
+  async updateTeacherReview(reviewId: string, action: TeacherReviewAction) {
+    const item = reviewQueue.get(reviewId);
+
+    if (!item) {
+      throw new Error(`Unknown teacher review: ${reviewId}`);
+    }
+
+    const updatedItem: TeacherReviewQueueItem = {
+      ...item,
+      review: {
+        ...item.review,
+        reviewerUserId: action.reviewerUserId,
+        status: action.status,
+        correction: action.correction,
+        rubricNotes: action.rubricNotes ?? item.review.rubricNotes,
+      },
+    };
+    const conversation = conversationLog.get(item.conversationId);
+
+    if (conversation) {
+      conversationLog.set(item.conversationId, {
+        ...conversation,
+        review: updatedItem.review,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    reviewQueue.set(reviewId, updatedItem);
+
+    return updatedItem;
   }
 }
 

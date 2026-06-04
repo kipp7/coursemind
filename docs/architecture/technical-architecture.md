@@ -102,6 +102,7 @@ The MVP now has a mock persistence boundary in `services/api/src/repositories`:
 - `ConversationRepository` defines the application-facing storage interface.
 - `InMemoryConversationRepository` stores conversation messages, citations, RAG traces, and teacher review queue items for the running server process.
 - `/api/teacher/reviews` exposes the current teacher review queue for the Web demo.
+- `/api/teacher/reviews/[reviewId]` lets the demo approve, correct, or reject a pending teacher review.
 
 This is not durable database storage. It exists to prove the school review and audit boundary before introducing Prisma/PostgreSQL or another production store.
 

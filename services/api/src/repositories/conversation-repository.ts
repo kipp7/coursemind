@@ -6,6 +6,7 @@ import type {
   Course,
   RagTrace,
   TeacherReview,
+  TeacherReviewAction,
   TeacherReviewQueueItem,
 } from "@coursemind/contracts";
 
@@ -22,4 +23,5 @@ export type SaveAnswerRecordInput = {
 export interface ConversationRepository {
   saveAnswerRecord(input: SaveAnswerRecordInput): Promise<ConversationLogEntry>;
   listTeacherReviewQueue(): Promise<TeacherReviewQueueItem[]>;
+  updateTeacherReview(reviewId: string, action: TeacherReviewAction): Promise<TeacherReviewQueueItem>;
 }
