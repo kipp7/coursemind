@@ -12,7 +12,8 @@ Current behavior:
 
 - `COURSEMIND_RAG_PROVIDER` defaults to `mock`.
 - `mock` returns demo citations from course documents without external calls.
-- `dify` and `ragflow` are reserved provider IDs, but they intentionally fail until their adapters are implemented and configured.
+- `dify` has a first adapter skeleton and intentionally fails with `503` until Dify API settings are provided.
+- `ragflow` is a reserved provider ID and intentionally fails until its adapter is implemented and configured.
 - The Web app should continue calling CourseMind's own API routes, never provider APIs directly.
 
 ### Dify
@@ -24,6 +25,30 @@ Use when:
 - speed matters more than deep document parsing control
 - we want fast demos with workflows
 - teachers or operators may configure prompts and flows
+
+Current skeleton:
+
+- Code lives in `services/api/src/rag/dify-rag-gateway.ts`.
+- Provider selection uses `COURSEMIND_RAG_PROVIDER=dify`.
+- Required runtime settings:
+  - `COURSEMIND_DIFY_API_BASE_URL`
+  - `COURSEMIND_DIFY_APP_AUTH`
+  - optional `COURSEMIND_DIFY_USER_PREFIX`
+- The adapter is shaped around Dify's service API chat message endpoint:
+
+```text
+POST /v1/chat-messages
+Authorization header uses a server-side bearer credential
+response_mode: blocking
+query: student or teacher question
+inputs: course id, role, visible document ids
+```
+
+Do not expose the Dify API key to the frontend. Keep it in server runtime configuration only.
+
+The skeleton maps Dify `retriever_resources` into CourseMind citations when present. Real Dify integration still needs environment-specific testing with a configured Dify app and course knowledge base.
+
+Reference: https://docs.dify.ai/api-reference/chatflows/send-chat-message
 
 ### RAGFlow
 

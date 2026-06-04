@@ -19,6 +19,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - The Web app now posts questions to CourseMind's own API boundary and displays citations, review status, and a mock RAG trace.
 - A first RAG gateway adapter boundary exists in `services/api/src/rag`; the course-agent use case now depends on `RagGateway` instead of inline retrieval logic.
 - Shared contracts now use Zod schemas, and `/api/agent/answer` validates request and response payloads at runtime.
+- A Dify RAG adapter skeleton exists in `services/api/src/rag/dify-rag-gateway.ts`; it requires server-side Dify environment variables before real use.
 
 ## Constraints
 
@@ -34,11 +35,12 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 1. Keep the Next.js MVP usable as the first demo.
 2. Establish docs and memory as project-level source of truth.
 3. Keep local Git and GitHub remote in sync.
-4. Implement Dify and RAGFlow adapters behind the existing RAG gateway interface.
-5. Add validation to future API routes as they are introduced.
-6. Persist conversation messages and teacher review records.
-7. Localize the Web demo copy for the intended Chinese school audience.
-8. Keep future work committed and pushed in small coherent units.
+4. Test the Dify adapter against a real Dify app and course knowledge base when credentials are available.
+5. Implement the RAGFlow adapter behind the existing RAG gateway interface.
+6. Add validation to future API routes as they are introduced.
+7. Persist conversation messages and teacher review records.
+8. Localize the Web demo copy for the intended Chinese school audience.
+9. Keep future work committed and pushed in small coherent units.
 
 ## Done Criteria
 

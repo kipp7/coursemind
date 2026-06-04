@@ -1,3 +1,4 @@
+import { DifyRagGateway, type DifyRagGatewayConfig } from "./dify-rag-gateway";
 import { MockRagGateway } from "./mock-rag-gateway";
 import type { RagGateway, RagProviderId } from "./rag-gateway";
 
@@ -11,6 +12,10 @@ export class RagProviderConfigurationError extends Error {
 export function createRagGateway(provider: RagProviderId = getConfiguredRagProvider()): RagGateway {
   if (provider === "mock") {
     return new MockRagGateway();
+  }
+
+  if (provider === "dify") {
+    return new DifyRagGateway(getDifyConfig());
   }
 
   throw new RagProviderConfigurationError(provider);
@@ -28,4 +33,19 @@ function getConfiguredRagProvider(): RagProviderId {
   }
 
   return "custom";
+}
+
+function getDifyConfig(): DifyRagGatewayConfig {
+  const apiBaseUrl = process.env.COURSEMIND_DIFY_API_BASE_URL;
+  const apiKey = process.env.COURSEMIND_DIFY_APP_AUTH;
+
+  if (!apiBaseUrl || !apiKey) {
+    throw new RagProviderConfigurationError("dify");
+  }
+
+  return {
+    apiBaseUrl,
+    apiKey,
+    userPrefix: process.env.COURSEMIND_DIFY_USER_PREFIX,
+  };
 }
