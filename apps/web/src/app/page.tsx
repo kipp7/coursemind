@@ -5,29 +5,32 @@ import type {
   AuditEvent,
   AuditEventListResponse,
   AnswerResponse,
+  CourseDocument,
   CourseDocumentCreateRequest,
   CourseDocumentCreateResponse,
-  CourseDocument,
   CourseRole,
   CourseSnapshot,
   TeacherReviewAction,
+  TeacherReviewQueueItem,
   TeacherReviewQueueResponse,
 } from "@coursemind/contracts";
 import {
   ArrowRight,
   BarChart3,
-  ExternalLink,
+  Check,
+  FilePlus2,
   Languages,
   Library,
   MessagesSquare,
-  Play,
   Send,
   ShieldCheck,
   SlidersHorizontal,
   Upload,
-  WandSparkles,
+  X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+
+type WorkspaceView = "assistant" | "courses" | "teacher" | "audit";
 
 type ChatMessage = {
   id: string;
@@ -36,22 +39,25 @@ type ChatMessage = {
   sources?: string[];
 };
 
-type NavItem = {
-  id: string;
-  label: string;
-  icon: typeof MessagesSquare;
-};
-
 const locales: AppLocale[] = ["zh-CN", "en-US"];
+const sourceTypes: CourseDocumentCreateRequest["sourceType"][] = ["pdf", "ppt", "word", "markdown", "web", "transcript"];
+const visibilityTypes: CourseDocumentCreateRequest["visibility"][] = ["student", "teacher", "admin"];
+
+const viewIcons = {
+  assistant: MessagesSquare,
+  courses: Library,
+  teacher: SlidersHorizontal,
+  audit: BarChart3,
+};
 
 const copy = {
   "zh-CN": {
     appSubtitle: "学校课程智能体 MVP",
-    nav: {
+    views: {
       assistant: "课程问答",
-      courses: "课程空间",
+      courses: "课程资料",
       teacher: "教师审核",
-      analytics: "审计记录",
+      audit: "审计记录",
     },
     roles: {
       student: "学生",
@@ -63,100 +69,75 @@ const copy = {
       teacher: "请生成一条带引用的回答，并进入教师审核队列。",
       admin: "请总结这次回答的 provider 边界、引用和审计数据。",
     },
+    headers: {
+      assistant: {
+        eyebrow: "课程问答",
+        title: "先回答一个问题，再进入引用和教师审核。",
+        body: "默认工作区只保留学生最常用的问答流程；资料、审核和审计放到各自页面里。",
+      },
+      courses: {
+        eyebrow: "课程资料",
+        title: "管理课程资料入库任务和知识库状态。",
+        body: "这里先做元数据级入库，后续替换为真实文件上传、解析、切片和索引。",
+      },
+      teacher: {
+        eyebrow: "教师审核",
+        title: "审核智能体回答，沉淀教师修正和规范。",
+        body: "教师审核是后续固化学校规范、评分标准和老师风格的数据来源。",
+      },
+      audit: {
+        eyebrow: "治理审计",
+        title: "追踪资料入库、回答生成和教师审核动作。",
+        body: "审计记录帮助学校知道每条回答从哪里来、谁审核过、哪些资料进入过知识库。",
+      },
+    },
     seed: {
       user: "我们应该先用 RAG 做课程智能体，还是马上微调一个模型？",
-      assistant:
-        "先做 RAG。课程资料变化快，MVP 应该先检索当前课程上下文，带引用回答，并把结果送入教师审核；微调等有真实审核数据后再做。",
+      assistant: "先做 RAG。课程资料变化快，MVP 应该先检索当前课程上下文，带引用回答，并把结果送入教师审核；微调等有真实审核数据后再做。",
       sources: ["课程大纲", "第 4 讲：RAG 与课程问答"],
     },
-    status: {
-      title: "Mock provider 已连接",
-      body: "Dify/RAGFlow 适配器边界已保留",
-    },
-    top: {
-      eyebrow: "纵向闭环",
-      title: "基于课程资料提问、带引用回答，并进入教师审核。",
-      upload: "上传课程资料",
-      run: "运行演示",
+    nav: {
+      course: "课程空间",
+      role: "角色",
       language: "语言",
-    },
-    hero: {
-      eyebrow: "面向学校交付",
-      title: "Web 前端先调用我们自己的 API，再由 API 对接 RAG 和模型 provider。",
-      body: "第一个 MVP 就把学生、教师、引用、审核、审计和 provider 替换能力摆在明面上，而不是塞进一段提示词里。",
+      statusTitle: "Mock provider 已连接",
+      statusBody: "Dify/RAGFlow 适配器边界已保留",
     },
     assistant: {
-      eyebrow: "课程问答",
       loading: "课程加载中",
-      role: "角色",
-      placeholder: "向当前课程提问",
       askLabel: "输入课程问题",
+      placeholder: "向当前课程提问",
       send: "发送问题",
-      guardrails: "应用护栏",
+      evidence: "回答依据",
+      noEvidence: "提问后会显示引用资料。",
+      guardrails: "回答护栏",
+      review: "审核状态",
+      provider: "Provider",
+      pending: "下一次回答会创建一条待教师审核记录。",
       couldNotLoad: "无法加载演示课程。",
       requestFailed: "回答请求失败",
       reviewFailed: "教师审核更新失败",
     },
-    evidence: {
-      title: "回答依据",
-      view: "查看引用",
-      fallback: "已检索课程证据",
-    },
-    knowledge: {
-      title: "知识库",
-      indexed: "已索引",
+    courses: {
+      overview: "知识库概览",
       docs: "资料",
       chunks: "切片",
-      queue: "队列",
-      ingestTitle: "新增课程资料",
-      documentTitle: "资料标题",
-      documentTitlePlaceholder: "例如：第 5 讲：向量数据库与检索评估",
+      queue: "待审",
+      coverage: "覆盖率",
+      materialList: "课程资料列表",
+      addMaterial: "新增课程资料",
+      titleLabel: "资料标题",
+      titlePlaceholder: "例如：第 5 讲：向量数据库与检索评估",
       sourceType: "资料类型",
       visibility: "可见范围",
-      visibilityOptions: {
-        student: "学生可见",
-        teacher: "教师审核",
-        admin: "管理员",
-      },
-      sourceTypeOptions: {
-        pdf: "PDF",
-        ppt: "课件",
-        word: "Word",
-        markdown: "Markdown",
-        web: "网页",
-        transcript: "课堂转写",
-      },
       submit: "创建入库任务",
       submitting: "创建中",
       created: "已创建资料入库任务。",
       createFailed: "资料入库任务创建失败",
     },
-    governance: {
-      title: "治理链路",
-      items: [
-        "Web 调用 CourseMind API",
-        "共享 DTO 合约",
-        "RAG gateway 适配器",
-        "教师审核持久化边界",
-        "审计事件边界",
-        "Dify provider 骨架",
-      ],
-    },
-    audit: {
-      title: "审计事件",
-      emptyTitle: "暂无事件",
-      emptyBody: "提一个问题后会生成第一条审计记录。",
-      eventTypes: {
-        "agent.answer.created": "智能体回答已创建",
-        "course_document.ingestion_requested": "课程资料入库已请求",
-        "teacher_review.updated": "教师审核已更新",
-      },
-    },
-    review: {
-      title: "审核状态",
-      pending: "下一次回答会创建一条待教师审核记录。",
-      provider: "Provider",
-      actions: "教师审核动作",
+    teacher: {
+      queueTitle: "待审核回答",
+      empty: "暂无待审核回答。先在课程问答里发送一个问题。",
       approve: "通过",
       correct: "修正",
       reject: "驳回",
@@ -164,19 +145,51 @@ const copy = {
       correctionNotes: "教师要求解释更具体。",
       rejectedNotes: "演示审核流程：教师驳回了这条回答。",
     },
-    architecture: {
-      eyebrow: "技术架构",
-      title: "底层开源工具可以替换，学校业务边界必须握在我们自己手里。",
-      flow: ["Next.js Web", "应用 API", "RAG Gateway", "模型 Gateway"],
+    audit: {
+      empty: "暂无审计记录。",
+      target: "对象",
+      eventTypes: {
+        "agent.answer.created": "智能体回答已创建",
+        "course_document.ingestion_requested": "课程资料入库已请求",
+        "teacher_review.updated": "教师审核已更新",
+      },
+      governanceTitle: "当前治理链路",
+      governanceItems: [
+        "课程资料入库请求",
+        "RAG gateway 适配器",
+        "带引用的课程回答",
+        "教师审核动作",
+        "审计事件记录",
+        "Dify provider 骨架",
+      ],
+    },
+    sourceTypes: {
+      pdf: "PDF",
+      ppt: "课件",
+      word: "Word",
+      markdown: "Markdown",
+      web: "网页",
+      transcript: "课堂转写",
+    },
+    visibility: {
+      student: "学生可见",
+      teacher: "教师审核",
+      admin: "管理员",
+    },
+    statuses: {
+      pending: "待处理",
+      indexed: "已索引",
+      needs_review: "待审核",
+      blocked: "已阻止",
     },
   },
   "en-US": {
     appSubtitle: "School course agent MVP",
-    nav: {
+    views: {
       assistant: "Assistant",
-      courses: "Courses",
-      teacher: "Teacher review",
-      analytics: "Audit trail",
+      courses: "Materials",
+      teacher: "Review",
+      audit: "Audit",
     },
     roles: {
       student: "Student",
@@ -188,100 +201,75 @@ const copy = {
       teacher: "Draft a cited answer and mark it for teacher review.",
       admin: "Summarize the provider boundary and audit data for this answer.",
     },
+    headers: {
+      assistant: {
+        eyebrow: "Course Q&A",
+        title: "Answer one course question, then review citations and status.",
+        body: "The default workspace now focuses on the student Q&A flow. Materials, review, and audit have their own surfaces.",
+      },
+      courses: {
+        eyebrow: "Course materials",
+        title: "Manage ingestion tasks and knowledge base status.",
+        body: "This is metadata-level ingestion first. Real file upload, parsing, chunking, and indexing come next.",
+      },
+      teacher: {
+        eyebrow: "Teacher review",
+        title: "Review agent answers and retain teacher corrections.",
+        body: "Teacher review data later becomes the source for school norms, rubrics, and teacher style.",
+      },
+      audit: {
+        eyebrow: "Governance audit",
+        title: "Track ingestion, answer generation, and review actions.",
+        body: "Audit records help the school inspect where answers came from and who reviewed them.",
+      },
+    },
     seed: {
       user: "Should we build this course agent with RAG first, or fine-tune a model immediately?",
-      assistant:
-        "Start with RAG. Course material changes often, so the MVP should retrieve current course context, answer with citations, and send the response into teacher review before any fine-tuning work.",
+      assistant: "Start with RAG. Course material changes often, so the MVP should retrieve current course context, answer with citations, and send the response into teacher review before fine-tuning.",
       sources: ["Course syllabus", "Lecture 4: RAG and course Q&A"],
     },
-    status: {
-      title: "Mock provider online",
-      body: "Dify/RAGFlow adapter boundary preserved",
-    },
-    top: {
-      eyebrow: "Vertical slice",
-      title: "Ask with course context, cite the answer, queue teacher review.",
-      upload: "Upload course material",
-      run: "Run demo",
+    nav: {
+      course: "Course space",
+      role: "Role",
       language: "Language",
-    },
-    hero: {
-      eyebrow: "School-ready from day one",
-      title: "Our Web app calls our API first, then the API talks to RAG and model providers.",
-      body: "The first MVP keeps student, teacher, citation, review, audit, and provider-swap concerns visible instead of hiding them in prompt text.",
+      statusTitle: "Mock provider online",
+      statusBody: "Dify/RAGFlow adapter boundary preserved",
     },
     assistant: {
-      eyebrow: "Course Q&A",
       loading: "Loading course",
-      role: "Role",
-      placeholder: "Ask a question about the selected course",
       askLabel: "Ask a course question",
+      placeholder: "Ask about the selected course",
       send: "Send question",
-      guardrails: "Apply guardrails",
+      evidence: "Evidence",
+      noEvidence: "Ask a question to show cited sources.",
+      guardrails: "Guardrails",
+      review: "Review status",
+      provider: "Provider",
+      pending: "Next answer will create a pending teacher review record.",
       couldNotLoad: "Could not load demo courses.",
       requestFailed: "Answer request failed",
       reviewFailed: "Teacher review update failed",
     },
-    evidence: {
-      title: "Answer evidence",
-      view: "View citations",
-      fallback: "Retrieved course evidence",
-    },
-    knowledge: {
-      title: "Knowledge base",
-      indexed: "Indexed",
+    courses: {
+      overview: "Knowledge base overview",
       docs: "Docs",
       chunks: "Chunks",
       queue: "Queue",
-      ingestTitle: "Add course material",
-      documentTitle: "Material title",
-      documentTitlePlaceholder: "Example: Lecture 5: Vector DB and retrieval evaluation",
+      coverage: "Coverage",
+      materialList: "Course material list",
+      addMaterial: "Add course material",
+      titleLabel: "Material title",
+      titlePlaceholder: "Example: Lecture 5: Vector DB and retrieval evaluation",
       sourceType: "Source type",
       visibility: "Visibility",
-      visibilityOptions: {
-        student: "Student visible",
-        teacher: "Teacher review",
-        admin: "Admin",
-      },
-      sourceTypeOptions: {
-        pdf: "PDF",
-        ppt: "Slides",
-        word: "Word",
-        markdown: "Markdown",
-        web: "Web",
-        transcript: "Transcript",
-      },
       submit: "Create ingestion task",
       submitting: "Creating",
       created: "Course material ingestion task created.",
       createFailed: "Course material ingestion task failed",
     },
-    governance: {
-      title: "Governance trace",
-      items: [
-        "Web calls CourseMind API",
-        "Shared DTO contracts",
-        "RAG gateway adapter",
-        "Teacher review persistence",
-        "Audit event boundary",
-        "Dify provider skeleton",
-      ],
-    },
-    audit: {
-      title: "Audit events",
-      emptyTitle: "No events yet",
-      emptyBody: "Ask a question to create the first audit record.",
-      eventTypes: {
-        "agent.answer.created": "Agent answer created",
-        "course_document.ingestion_requested": "Course document ingestion requested",
-        "teacher_review.updated": "Teacher review updated",
-      },
-    },
-    review: {
-      title: "Review status",
-      pending: "Next answer will create a pending teacher review record.",
-      provider: "Provider",
-      actions: "Teacher review actions",
+    teacher: {
+      queueTitle: "Pending answers",
+      empty: "No pending answers. Ask a question in the assistant workspace first.",
       approve: "Approve",
       correct: "Correct",
       reject: "Reject",
@@ -289,13 +277,66 @@ const copy = {
       correctionNotes: "Teacher requested a more concrete explanation.",
       rejectedNotes: "Rejected for the demo review workflow.",
     },
-    architecture: {
-      eyebrow: "Architecture",
-      title: "Provider tools can change. The school business boundary stays ours.",
-      flow: ["Next.js Web", "Application API", "RAG Gateway", "Model Gateway"],
+    audit: {
+      empty: "No audit records yet.",
+      target: "Target",
+      eventTypes: {
+        "agent.answer.created": "Agent answer created",
+        "course_document.ingestion_requested": "Course material ingestion requested",
+        "teacher_review.updated": "Teacher review updated",
+      },
+      governanceTitle: "Current governance path",
+      governanceItems: [
+        "Course material ingestion",
+        "RAG gateway adapter",
+        "Cited course answer",
+        "Teacher review action",
+        "Audit event record",
+        "Dify provider skeleton",
+      ],
+    },
+    sourceTypes: {
+      pdf: "PDF",
+      ppt: "Slides",
+      word: "Word",
+      markdown: "Markdown",
+      web: "Web",
+      transcript: "Transcript",
+    },
+    visibility: {
+      student: "Student visible",
+      teacher: "Teacher review",
+      admin: "Admin",
+    },
+    statuses: {
+      pending: "pending",
+      indexed: "indexed",
+      needs_review: "needs review",
+      blocked: "blocked",
     },
   },
-} satisfies Record<AppLocale, Record<string, unknown>>;
+} satisfies Record<AppLocale, {
+  appSubtitle: string;
+  views: Record<WorkspaceView, string>;
+  roles: Record<CourseRole, string>;
+  prompts: Record<CourseRole, string>;
+  headers: Record<WorkspaceView, { eyebrow: string; title: string; body: string }>;
+  seed: { user: string; assistant: string; sources: string[] };
+  nav: Record<string, string>;
+  assistant: Record<string, string>;
+  courses: Record<string, string>;
+  teacher: Record<string, string>;
+  audit: {
+    empty: string;
+    target: string;
+    eventTypes: Record<AuditEvent["type"], string>;
+    governanceTitle: string;
+    governanceItems: string[];
+  };
+  sourceTypes: Record<CourseDocumentCreateRequest["sourceType"], string>;
+  visibility: Record<CourseDocumentCreateRequest["visibility"], string>;
+  statuses: Record<CourseDocument["ingestionStatus"], string>;
+}>;
 
 const courseTitles: Record<AppLocale, Record<string, string>> = {
   "zh-CN": {
@@ -319,36 +360,12 @@ const documentTitles: Record<AppLocale, Record<string, string>> = {
   "en-US": {},
 };
 
-const documentStatuses: Record<AppLocale, Record<CourseDocument["ingestionStatus"], string>> = {
-  "zh-CN": {
-    pending: "待处理",
-    indexed: "已索引",
-    needs_review: "待审核",
-    blocked: "已阻止",
-  },
-  "en-US": {
-    pending: "pending",
-    indexed: "indexed",
-    needs_review: "needs review",
-    blocked: "blocked",
-  },
-};
-
 function createSeedMessages(locale: AppLocale): ChatMessage[] {
   const text = copy[locale];
 
   return [
-    {
-      id: `seed-user-${locale}`,
-      kind: "user",
-      text: text.seed.user,
-    },
-    {
-      id: `seed-assistant-${locale}`,
-      kind: "assistant",
-      text: text.seed.assistant,
-      sources: text.seed.sources,
-    },
+    { id: `seed-user-${locale}`, kind: "user", text: text.seed.user },
+    { id: `seed-assistant-${locale}`, kind: "assistant", text: text.seed.assistant, sources: text.seed.sources },
   ];
 }
 
@@ -367,15 +384,15 @@ function getDocumentTitle(documentId: string, fallback: string, locale: AppLocal
 export default function Home() {
   const [locale, setLocale] = useState<AppLocale>("zh-CN");
   const text = copy[locale];
-  const [activeNav, setActiveNav] = useState("assistant");
+  const [activeView, setActiveView] = useState<WorkspaceView>("assistant");
   const [courses, setCourses] = useState<CourseSnapshot[]>([]);
   const [courseId, setCourseId] = useState("ai-101");
   const [role, setRole] = useState<CourseRole>("student");
   const [prompt, setPrompt] = useState(text.prompts.student);
   const [messages, setMessages] = useState<ChatMessage[]>(() => createSeedMessages(locale));
   const [lastResponse, setLastResponse] = useState<AnswerResponse | null>(null);
+  const [reviewItems, setReviewItems] = useState<TeacherReviewQueueItem[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
-  const [reviewQueueCount, setReviewQueueCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingDocument, setIsCreatingDocument] = useState(false);
   const [documentTitle, setDocumentTitle] = useState("");
@@ -384,37 +401,36 @@ export default function Home() {
   const [documentNotice, setDocumentNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const navItems: NavItem[] = useMemo(
-    () => [
-      { id: "assistant", label: text.nav.assistant, icon: MessagesSquare },
-      { id: "courses", label: text.nav.courses, icon: Library },
-      { id: "teacher", label: text.nav.teacher, icon: SlidersHorizontal },
-      { id: "analytics", label: text.nav.analytics, icon: BarChart3 },
-    ],
-    [text],
+  const selectedCourse = useMemo(
+    () => courses.find((item) => item.course.id === courseId) ?? courses[0],
+    [courseId, courses],
   );
+  const header = text.headers[activeView];
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadCourses() {
-      const response = await fetch("/api/courses");
-      const data = (await response.json()) as { courses: CourseSnapshot[] };
+    async function loadInitialData() {
+      const [courseResponse, reviewResponse, auditResponse] = await Promise.all([
+        fetch("/api/courses"),
+        fetch("/api/teacher/reviews"),
+        fetch("/api/audit/events"),
+      ]);
+      const courseData = (await courseResponse.json()) as { courses: CourseSnapshot[] };
+      const reviewData = (await reviewResponse.json()) as TeacherReviewQueueResponse;
+      const auditData = (await auditResponse.json()) as AuditEventListResponse;
 
       if (mounted) {
-        setCourses(data.courses);
-        setCourseId(data.courses[0]?.course.id ?? "ai-101");
+        setCourses(courseData.courses);
+        setCourseId(courseData.courses[0]?.course.id ?? "ai-101");
+        setReviewItems(reviewData.items);
+        setAuditEvents(auditData.items);
       }
     }
 
-    loadCourses().catch(() => {
+    loadInitialData().catch(() => {
       if (mounted) {
         setError(text.assistant.couldNotLoad);
-      }
-    });
-    refreshAuditEvents().catch(() => {
-      if (mounted) {
-        setAuditEvents([]);
       }
     });
 
@@ -426,7 +442,7 @@ export default function Home() {
   async function refreshReviewQueue() {
     const response = await fetch("/api/teacher/reviews");
     const data = (await response.json()) as TeacherReviewQueueResponse;
-    setReviewQueueCount(data.items.length);
+    setReviewItems(data.items);
   }
 
   async function refreshAuditEvents() {
@@ -435,28 +451,62 @@ export default function Home() {
     setAuditEvents(data.items);
   }
 
-  async function handleReviewAction(action: TeacherReviewAction) {
-    if (!lastResponse) {
+  function updateRole(nextRole: CourseRole) {
+    setRole(nextRole);
+    setPrompt(text.prompts[nextRole]);
+  }
+
+  function updateLocale(nextLocale: AppLocale) {
+    setLocale(nextLocale);
+    setPrompt(copy[nextLocale].prompts[role]);
+    setMessages(createSeedMessages(nextLocale));
+    setLastResponse(null);
+    setDocumentNotice(null);
+    setError(null);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!prompt.trim() || !selectedCourse) {
       return;
     }
 
-    const response = await fetch(`/api/teacher/reviews/${lastResponse.review.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(action),
-    });
-    const data = (await response.json()) as { item?: { review: AnswerResponse["review"] }; error?: string };
+    const question = prompt.trim();
+    setIsLoading(true);
+    setError(null);
+    setMessages((current) => [...current, { id: `user-${Date.now()}`, kind: "user", text: question }]);
 
-    if (!response.ok || data.error || !data.item) {
-      setError(data.error ?? text.assistant.reviewFailed);
-      return;
+    try {
+      const response = await fetch("/api/agent/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: selectedCourse.course.id, role, question, locale }),
+      });
+      const data = (await response.json()) as AnswerResponse | { error: string };
+
+      if (!response.ok || "error" in data) {
+        throw new Error("error" in data ? data.error : text.assistant.requestFailed);
+      }
+
+      setLastResponse(data);
+      setMessages((current) => [
+        ...current,
+        {
+          id: data.answerMessage.id,
+          kind: "assistant",
+          text: data.answerMessage.content,
+          sources: data.citations.map((citation) => getDocumentTitle(citation.documentId, citation.title, locale)),
+        },
+      ]);
+      setPrompt("");
+      await refreshReviewQueue();
+      await refreshAuditEvents();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : text.assistant.requestFailed);
+    } finally {
+      setIsLoading(false);
     }
-
-    const updatedReview = data.item.review;
-
-    setLastResponse((current) => current ? { ...current, review: updatedReview } : current);
-    await refreshReviewQueue();
-    await refreshAuditEvents();
   }
 
   async function handleCreateDocument(event: FormEvent<HTMLFormElement>) {
@@ -485,107 +535,42 @@ export default function Home() {
       const data = (await response.json()) as CourseDocumentCreateResponse | { error: string };
 
       if (!response.ok || "error" in data) {
-        throw new Error("error" in data ? data.error : text.knowledge.createFailed);
+        throw new Error("error" in data ? data.error : text.courses.createFailed);
       }
 
-      setCourses((current) =>
-        current.map((item) => (item.course.id === data.snapshot.course.id ? data.snapshot : item)),
-      );
+      setCourses((current) => current.map((item) => (item.course.id === data.snapshot.course.id ? data.snapshot : item)));
       setDocumentTitle("");
-      setDocumentNotice(text.knowledge.created);
+      setDocumentNotice(text.courses.created);
       await refreshAuditEvents();
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : text.knowledge.createFailed);
+      setError(requestError instanceof Error ? requestError.message : text.courses.createFailed);
     } finally {
       setIsCreatingDocument(false);
     }
   }
 
-  const selectedCourse = useMemo(
-    () => courses.find((item) => item.course.id === courseId) ?? courses[0],
-    [courseId, courses],
-  );
-  const evidenceItems = useMemo(() => {
-    if (lastResponse) {
-      return lastResponse.citations.map((citation) => ({
-        id: citation.documentId,
-        title: getDocumentTitle(citation.documentId, citation.title, locale),
-        detail: citation.excerpt ?? citation.locator ?? text.evidence.fallback,
-      }));
-    }
+  async function handleReviewAction(reviewId: string, action: TeacherReviewAction) {
+    const response = await fetch(`/api/teacher/reviews/${reviewId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(action),
+    });
+    const data = (await response.json()) as { item?: TeacherReviewQueueItem; error?: string };
 
-    return (selectedCourse?.documents.slice(0, 3) ?? []).map((document) => ({
-      id: document.id,
-      title: getDocumentTitle(document.id, document.title, locale),
-      detail: documentStatuses[locale][document.ingestionStatus],
-    }));
-  }, [lastResponse, locale, selectedCourse, text.evidence.fallback]);
-
-  function updateRole(nextRole: CourseRole) {
-    setRole(nextRole);
-    setPrompt(text.prompts[nextRole]);
-  }
-
-  function updateLocale(nextLocale: AppLocale) {
-    setLocale(nextLocale);
-    setPrompt(copy[nextLocale].prompts[role]);
-    setMessages(createSeedMessages(nextLocale));
-    setLastResponse(null);
-    setDocumentNotice(null);
-    setError(null);
-  }
-
-  function focusDocumentForm() {
-    document.getElementById("document-title")?.focus();
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!prompt.trim() || !selectedCourse) {
+    if (!response.ok || data.error || !data.item) {
+      setError(data.error ?? text.assistant.reviewFailed);
       return;
     }
 
-    const question = prompt.trim();
-    setIsLoading(true);
-    setError(null);
-    setMessages((current) => [
-      ...current,
-      { id: `user-${Date.now()}`, kind: "user", text: question },
-    ]);
-
-    try {
-      const response = await fetch("/api/agent/answer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId: selectedCourse.course.id, role, question, locale }),
-      });
-
-      const data = (await response.json()) as AnswerResponse | { error: string };
-
-      if (!response.ok || "error" in data) {
-        throw new Error("error" in data ? data.error : text.assistant.requestFailed);
-      }
-
-      setLastResponse(data);
-      await refreshReviewQueue();
-      await refreshAuditEvents();
-      setMessages((current) => [
-        ...current,
-        {
-          id: data.answerMessage.id,
-          kind: "assistant",
-          text: data.answerMessage.content,
-          sources: data.citations.map((citation) => getDocumentTitle(citation.documentId, citation.title, locale)),
-        },
-      ]);
-      setPrompt("");
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : text.assistant.requestFailed);
-    } finally {
-      setIsLoading(false);
+    if (lastResponse?.review.id === reviewId) {
+      setLastResponse((current) => current ? { ...current, review: data.item!.review } : current);
     }
+
+    await refreshReviewQueue();
+    await refreshAuditEvents();
   }
+
+  const visibleCitations = lastResponse?.citations ?? [];
 
   return (
     <div className="app-shell">
@@ -598,25 +583,26 @@ export default function Home() {
           </div>
         </div>
 
-        <nav className="nav-stack" aria-label={text.top.language}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
+        <nav className="nav-stack" aria-label="Workspace">
+          {(Object.keys(text.views) as WorkspaceView[]).map((view) => {
+            const Icon = viewIcons[view];
+
             return (
               <button
-                className={activeNav === item.id ? "nav-item active" : "nav-item"}
-                key={item.id}
-                onClick={() => setActiveNav(item.id)}
+                className={activeView === view ? "nav-item active" : "nav-item"}
+                key={view}
+                onClick={() => setActiveView(view)}
                 type="button"
               >
                 <Icon aria-hidden="true" />
-                <span>{item.label}</span>
+                <span>{text.views[view]}</span>
               </button>
             );
           })}
         </nav>
 
         <div className="course-switcher">
-          <label htmlFor="course-select">{text.nav.courses}</label>
+          <label htmlFor="course-select">{text.nav.course}</label>
           <select id="course-select" value={courseId} onChange={(event) => setCourseId(event.target.value)}>
             {courses.map((item) => (
               <option key={item.course.id} value={item.course.id}>
@@ -626,28 +612,18 @@ export default function Home() {
           </select>
         </div>
 
-        <div className="role-switcher" aria-label={text.assistant.role}>
+        <div className="role-switcher" aria-label={text.nav.role}>
           {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
-            <button
-              className={role === item ? "role-tab active" : "role-tab"}
-              key={item}
-              onClick={() => updateRole(item)}
-              type="button"
-            >
+            <button className={role === item ? "role-tab active" : "role-tab"} key={item} onClick={() => updateRole(item)} type="button">
               {text.roles[item]}
             </button>
           ))}
         </div>
 
-        <div className="locale-switcher" aria-label={text.top.language}>
+        <div className="locale-switcher" aria-label={text.nav.language}>
           <Languages aria-hidden="true" />
           {locales.map((item) => (
-            <button
-              className={locale === item ? "locale-tab active" : "locale-tab"}
-              key={item}
-              onClick={() => updateLocale(item)}
-              type="button"
-            >
+            <button className={locale === item ? "locale-tab active" : "locale-tab"} key={item} onClick={() => updateLocale(item)} type="button">
               {item === "zh-CN" ? "中文" : "English"}
             </button>
           ))}
@@ -656,277 +632,289 @@ export default function Home() {
         <div className="status-panel">
           <span className="status-dot" />
           <div>
-            <strong>{text.status.title}</strong>
-            <span>{text.status.body}</span>
+            <strong>{text.nav.statusTitle}</strong>
+            <span>{text.nav.statusBody}</span>
           </div>
         </div>
       </aside>
 
       <main className="workspace">
-        <header className="topbar">
+        <header className="workspace-header">
           <div>
-            <p className="eyebrow">{text.top.eyebrow}</p>
-            <h1>{text.top.title}</h1>
+            <p className="eyebrow">{header.eyebrow}</p>
+            <h1>{header.title}</h1>
+            <p>{header.body}</p>
           </div>
-          <div className="top-actions">
-            <button
-              className="icon-button"
-              title={text.top.upload}
-              type="button"
-              aria-label={text.top.upload}
-              onClick={focusDocumentForm}
-            >
-              <Upload aria-hidden="true" />
-            </button>
-            <button className="primary-action" type="button">
-              <Play aria-hidden="true" />
-              {text.top.run}
-            </button>
-          </div>
+          <button className="primary-action" onClick={() => setActiveView("courses")} type="button">
+            <Upload aria-hidden="true" />
+            {text.views.courses}
+          </button>
         </header>
 
-        <section className="hero-strip" aria-label="CourseMind overview">
-          <div className="hero-overlay">
-            <div>
-              <p className="eyebrow light">{text.hero.eyebrow}</p>
-              <h2>{text.hero.title}</h2>
-            </div>
-            <p>{text.hero.body}</p>
-          </div>
-        </section>
-
-        <section className="content-grid">
-          <div className="assistant-panel">
-            <div className="panel-heading">
-              <div>
-                <p className="eyebrow">{text.assistant.eyebrow}</p>
-                <h2>{getCourseTitle(selectedCourse?.course, locale)}</h2>
+        {activeView === "assistant" ? (
+          <section className="workspace-grid assistant-workspace">
+            <div className="assistant-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">{text.views.assistant}</p>
+                  <h2>{getCourseTitle(selectedCourse?.course, locale)}</h2>
+                </div>
+                <span className="model-badge">{text.roles[role]}</span>
               </div>
-              <span className="model-badge">
-                {text.assistant.role}: {text.roles[role]}
-              </span>
-            </div>
 
-            <div className="chat-feed" aria-live="polite">
-              {messages.map((message) => (
-                <article
-                  className={message.kind === "user" ? "message user-message" : "message assistant-message"}
-                  key={message.id}
-                >
-                  <span>{message.kind === "user" ? text.roles[role] : "CourseMind"}</span>
-                  <p>{message.text}</p>
-                  {message.sources ? (
-                    <div className="source-list">
-                      {message.sources.map((source) => (
-                        <button key={source} type="button">
-                          {source}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </article>
-              ))}
-            </div>
-
-            {error ? <p className="error-line">{error}</p> : null}
-
-            <form className="prompt-bar" onSubmit={handleSubmit}>
-              <button className="icon-button" title={text.assistant.guardrails} type="button" aria-label={text.assistant.guardrails}>
-                <WandSparkles aria-hidden="true" />
-              </button>
-              <input
-                aria-label={text.assistant.askLabel}
-                onChange={(event) => setPrompt(event.target.value)}
-                placeholder={text.assistant.placeholder}
-                value={prompt}
-              />
-              <button className="send-button" disabled={isLoading} type="submit" aria-label={text.assistant.send}>
-                <Send aria-hidden="true" />
-              </button>
-            </form>
-          </div>
-
-          <aside className="inspector" aria-label={text.evidence.title}>
-            <section className="inspector-block">
-              <div className="panel-heading compact">
-                <h2>{text.evidence.title}</h2>
-                <button className="icon-button small" title={text.evidence.view} type="button" aria-label={text.evidence.view}>
-                  <ExternalLink aria-hidden="true" />
-                </button>
-              </div>
-              <ol className="citation-list">
-                {evidenceItems.map((item) => (
-                  <li key={item.id}>
-                    <strong>{item.title}</strong>
-                    <span>{item.detail}</span>
-                  </li>
+              <div className="chat-feed" aria-live="polite">
+                {messages.map((message) => (
+                  <article className={message.kind === "user" ? "message user-message" : "message assistant-message"} key={message.id}>
+                    <span>{message.kind === "user" ? text.roles[role] : "CourseMind"}</span>
+                    <p>{message.text}</p>
+                    {message.sources ? (
+                      <div className="source-list">
+                        {message.sources.map((source) => (
+                          <button key={source} type="button">
+                            {source}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </article>
                 ))}
-              </ol>
-            </section>
+              </div>
 
-            <section className="inspector-block">
-              <div className="panel-heading compact">
-                <h2>{text.knowledge.title}</h2>
-                <span className="sync-badge">{text.knowledge.indexed}</span>
-              </div>
-              <div className="knowledge-meter">
-                <span style={{ width: `${selectedCourse?.coveragePercent ?? 0}%` }} />
-              </div>
-              <dl className="mini-stats">
-                <div>
-                  <dt>{text.knowledge.docs}</dt>
-                  <dd>{selectedCourse?.documents.length ?? 0}</dd>
-                </div>
-                <div>
-                  <dt>{text.knowledge.chunks}</dt>
-                  <dd>{selectedCourse?.indexedChunks.toLocaleString(locale) ?? 0}</dd>
-                </div>
-                <div>
-                  <dt>{text.knowledge.queue}</dt>
-                  <dd>{reviewQueueCount}</dd>
-                </div>
-              </dl>
-              <form className="document-form" onSubmit={handleCreateDocument}>
-                <h3>{text.knowledge.ingestTitle}</h3>
-                <label htmlFor="document-title">{text.knowledge.documentTitle}</label>
+              {error ? <p className="error-line">{error}</p> : null}
+
+              <form className="prompt-bar" onSubmit={handleSubmit}>
                 <input
-                  id="document-title"
-                  onChange={(event) => setDocumentTitle(event.target.value)}
-                  placeholder={text.knowledge.documentTitlePlaceholder}
-                  value={documentTitle}
+                  aria-label={text.assistant.askLabel}
+                  onChange={(event) => setPrompt(event.target.value)}
+                  placeholder={text.assistant.placeholder}
+                  value={prompt}
                 />
-                <div className="document-form-row">
-                  <label>
-                    <span>{text.knowledge.sourceType}</span>
-                    <select
-                      onChange={(event) =>
-                        setDocumentSourceType(event.target.value as CourseDocumentCreateRequest["sourceType"])
-                      }
-                      value={documentSourceType}
-                    >
-                      {Object.entries(text.knowledge.sourceTypeOptions).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>{text.knowledge.visibility}</span>
-                    <select
-                      onChange={(event) =>
-                        setDocumentVisibility(event.target.value as CourseDocumentCreateRequest["visibility"])
-                      }
-                      value={documentVisibility}
-                    >
-                      {Object.entries(text.knowledge.visibilityOptions).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                {documentNotice ? <p className="success-line">{documentNotice}</p> : null}
-                <button className="secondary-action" disabled={isCreatingDocument || !documentTitle.trim()} type="submit">
-                  {isCreatingDocument ? text.knowledge.submitting : text.knowledge.submit}
+                <button className="send-button" disabled={isLoading} type="submit" aria-label={text.assistant.send}>
+                  <Send aria-hidden="true" />
                 </button>
               </form>
-            </section>
+            </div>
 
-            <section className="inspector-block">
-              <h2>{text.governance.title}</h2>
-              <ul className="roadmap-list">
-                {text.governance.items.map((item, index) => (
-                  <li className={index < 4 ? "done" : index === 4 ? "active" : undefined} key={item}>
-                    {item}
-                  </li>
+            <aside className="context-rail">
+              <section className="inspector-block">
+                <h2>{text.assistant.evidence}</h2>
+                {visibleCitations.length > 0 ? (
+                  <ol className="citation-list">
+                    {visibleCitations.map((citation) => (
+                      <li key={citation.documentId}>
+                        <strong>{getDocumentTitle(citation.documentId, citation.title, locale)}</strong>
+                        <span>{citation.excerpt ?? citation.locator}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="muted-copy">{text.assistant.noEvidence}</p>
+                )}
+              </section>
+
+              <section className="inspector-block trace-block">
+                <div className="panel-heading compact">
+                  <h2>{text.assistant.review}</h2>
+                  <ShieldCheck aria-hidden="true" />
+                </div>
+                <p>{lastResponse?.review.rubricNotes ?? text.assistant.pending}</p>
+                <span>{lastResponse ? `${text.assistant.provider}: ${lastResponse.ragTrace.provider}` : `${text.assistant.provider}: mock`}</span>
+              </section>
+            </aside>
+          </section>
+        ) : null}
+
+        {activeView === "courses" ? (
+          <section className="workspace-grid">
+            <div className="data-panel">
+              <div className="panel-heading">
+                <h2>{text.courses.materialList}</h2>
+                <span className="sync-badge">{selectedCourse?.documents.length ?? 0}</span>
+              </div>
+              <div className="document-table">
+                {(selectedCourse?.documents ?? []).map((document) => (
+                  <article key={document.id}>
+                    <div>
+                      <strong>{getDocumentTitle(document.id, document.title, locale)}</strong>
+                      <span>{text.sourceTypes[document.sourceType]} · {text.visibility[document.visibility]}</span>
+                    </div>
+                    <span className="status-chip">{text.statuses[document.ingestionStatus]}</span>
+                  </article>
                 ))}
-              </ul>
-            </section>
+              </div>
+            </div>
 
-            <section className="inspector-block">
-              <div className="panel-heading compact">
-                <h2>{text.audit.title}</h2>
+            <aside className="context-rail">
+              <section className="inspector-block">
+                <h2>{text.courses.overview}</h2>
+                <div className="knowledge-meter">
+                  <span style={{ width: `${selectedCourse?.coveragePercent ?? 0}%` }} />
+                </div>
+                <dl className="mini-stats">
+                  <div>
+                    <dt>{text.courses.docs}</dt>
+                    <dd>{selectedCourse?.documents.length ?? 0}</dd>
+                  </div>
+                  <div>
+                    <dt>{text.courses.chunks}</dt>
+                    <dd>{selectedCourse?.indexedChunks.toLocaleString(locale) ?? 0}</dd>
+                  </div>
+                  <div>
+                    <dt>{text.courses.queue}</dt>
+                    <dd>{selectedCourse?.pendingReviewCount ?? 0}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="inspector-block">
+                <form className="document-form" onSubmit={handleCreateDocument}>
+                  <h2>{text.courses.addMaterial}</h2>
+                  <label htmlFor="document-title">{text.courses.titleLabel}</label>
+                  <input
+                    id="document-title"
+                    onChange={(event) => setDocumentTitle(event.target.value)}
+                    placeholder={text.courses.titlePlaceholder}
+                    value={documentTitle}
+                  />
+                  <div className="document-form-row">
+                    <label>
+                      <span>{text.courses.sourceType}</span>
+                      <select onChange={(event) => setDocumentSourceType(event.target.value as CourseDocumentCreateRequest["sourceType"])} value={documentSourceType}>
+                        {sourceTypes.map((sourceType) => (
+                          <option key={sourceType} value={sourceType}>
+                            {text.sourceTypes[sourceType]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>{text.courses.visibility}</span>
+                      <select onChange={(event) => setDocumentVisibility(event.target.value as CourseDocumentCreateRequest["visibility"])} value={documentVisibility}>
+                        {visibilityTypes.map((visibility) => (
+                          <option key={visibility} value={visibility}>
+                            {text.visibility[visibility]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  {documentNotice ? <p className="success-line">{documentNotice}</p> : null}
+                  <button className="secondary-action" disabled={isCreatingDocument || !documentTitle.trim()} type="submit">
+                    <FilePlus2 aria-hidden="true" />
+                    {isCreatingDocument ? text.courses.submitting : text.courses.submit}
+                  </button>
+                </form>
+              </section>
+            </aside>
+          </section>
+        ) : null}
+
+        {activeView === "teacher" ? (
+          <section className="data-panel full-span">
+            <div className="panel-heading">
+              <h2>{text.teacher.queueTitle}</h2>
+              <span className="sync-badge">{reviewItems.length}</span>
+            </div>
+            {reviewItems.length > 0 ? (
+              <div className="review-list">
+                {reviewItems.map((item) => (
+                  <article key={item.review.id}>
+                    <div>
+                      <strong>{getCourseTitle(item.course, locale)}</strong>
+                      <p>{item.answerMessage.content}</p>
+                      <div className="source-list">
+                        {item.citations.map((citation) => (
+                          <button key={citation.documentId} type="button">
+                            {getDocumentTitle(citation.documentId, citation.title, locale)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="review-actions">
+                      <button onClick={() => handleReviewAction(item.review.id, { status: "approved", reviewerUserId: "teacher-demo" })} type="button">
+                        <Check aria-hidden="true" />
+                        {text.teacher.approve}
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleReviewAction(item.review.id, {
+                            status: "corrected",
+                            reviewerUserId: "teacher-demo",
+                            correction: text.teacher.correction,
+                            rubricNotes: text.teacher.correctionNotes,
+                          })
+                        }
+                        type="button"
+                      >
+                        {text.teacher.correct}
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleReviewAction(item.review.id, {
+                            status: "rejected",
+                            reviewerUserId: "teacher-demo",
+                            rubricNotes: text.teacher.rejectedNotes,
+                          })
+                        }
+                        type="button"
+                      >
+                        <X aria-hidden="true" />
+                        {text.teacher.reject}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="muted-copy">{text.teacher.empty}</p>
+            )}
+          </section>
+        ) : null}
+
+        {activeView === "audit" ? (
+          <section className="workspace-grid">
+            <div className="data-panel">
+              <div className="panel-heading">
+                <h2>{text.views.audit}</h2>
                 <span className="sync-badge">{auditEvents.length}</span>
               </div>
-              <ul className="audit-list">
-                {auditEvents.length > 0 ? (
-                  auditEvents.slice(0, 4).map((event) => (
+              {auditEvents.length > 0 ? (
+                <ul className="audit-list">
+                  {auditEvents.map((event) => (
                     <li key={event.id}>
                       <strong>{text.audit.eventTypes[event.type]}</strong>
                       <span>{event.summary}</span>
+                      <small>{text.audit.target}: {event.targetType}</small>
                     </li>
-                  ))
-                ) : (
-                  <li>
-                    <strong>{text.audit.emptyTitle}</strong>
-                    <span>{text.audit.emptyBody}</span>
-                  </li>
-                )}
-              </ul>
-            </section>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted-copy">{text.audit.empty}</p>
+              )}
+            </div>
 
-            <section className="inspector-block trace-block">
-              <div className="panel-heading compact">
-                <h2>{text.review.title}</h2>
-                <ShieldCheck aria-hidden="true" />
-              </div>
-              <p>{lastResponse?.review.rubricNotes ?? text.review.pending}</p>
-              <span>{lastResponse ? `${text.review.provider}: ${lastResponse.ragTrace.provider}` : `${text.review.provider}: mock`}</span>
-              {lastResponse ? (
-                <div className="review-actions" aria-label={text.review.actions}>
-                  <button
-                    onClick={() => handleReviewAction({ status: "approved", reviewerUserId: "teacher-demo" })}
-                    type="button"
-                  >
-                    {text.review.approve}
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleReviewAction({
-                        status: "corrected",
-                        reviewerUserId: "teacher-demo",
-                        correction: text.review.correction,
-                        rubricNotes: text.review.correctionNotes,
-                      })
-                    }
-                    type="button"
-                  >
-                    {text.review.correct}
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleReviewAction({
-                        status: "rejected",
-                        reviewerUserId: "teacher-demo",
-                        rubricNotes: text.review.rejectedNotes,
-                      })
-                    }
-                    type="button"
-                  >
-                    {text.review.reject}
-                  </button>
-                </div>
-              ) : null}
-            </section>
-          </aside>
-        </section>
-
-        <section className="architecture-band" aria-label={text.architecture.eyebrow}>
-          <div>
-            <p className="eyebrow">{text.architecture.eyebrow}</p>
-            <h2>{text.architecture.title}</h2>
-          </div>
-          <div className="architecture-flow">
-            {text.architecture.flow.map((item, index) => (
-              <span className="architecture-flow-item" key={item}>
-                {index > 0 ? <ArrowRight aria-hidden="true" /> : null}
-                <span>{item}</span>
-              </span>
-            ))}
-          </div>
-        </section>
+            <aside className="context-rail">
+              <section className="inspector-block">
+                <h2>{text.audit.governanceTitle}</h2>
+                <ul className="roadmap-list">
+                  {text.audit.governanceItems.map((item, index) => (
+                    <li className={index < 5 ? "done" : "active"} key={item}>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              <section className="architecture-band compact-band" aria-label="Architecture">
+                {["Next.js Web", "API", "RAG Gateway", "Model Gateway"].map((item, index) => (
+                  <span className="architecture-flow-item" key={item}>
+                    {index > 0 ? <ArrowRight aria-hidden="true" /> : null}
+                    <span>{item}</span>
+                  </span>
+                ))}
+              </section>
+            </aside>
+          </section>
+        ) : null}
       </main>
     </div>
   );

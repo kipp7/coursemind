@@ -228,6 +228,32 @@ button {
   padding: 26px 30px 38px;
 }
 
+.workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.workspace-header p:last-child {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 22px;
+  align-items: start;
+}
+
+.assistant-workspace {
+  align-items: stretch;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -304,6 +330,10 @@ h2 {
 }
 
 .secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 38px;
   padding: 0 12px;
   color: #fff;
@@ -317,6 +347,11 @@ h2 {
 .secondary-action:disabled {
   cursor: wait;
   opacity: 0.58;
+}
+
+.secondary-action svg {
+  width: 16px;
+  height: 16px;
 }
 
 .hero-strip {
@@ -372,13 +407,8 @@ h2 {
   font-size: 22px;
 }
 
-.content-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 370px;
-  gap: 22px;
-}
-
 .assistant-panel,
+.data-panel,
 .inspector-block,
 .architecture-band {
   border: 1px solid var(--line);
@@ -389,8 +419,16 @@ h2 {
 .assistant-panel {
   display: flex;
   flex-direction: column;
-  min-height: 560px;
+  min-height: 620px;
   padding: 20px;
+}
+
+.data-panel {
+  padding: 20px;
+}
+
+.full-span {
+  max-width: 980px;
 }
 
 .panel-heading {
@@ -476,7 +514,7 @@ h2 {
 
 .prompt-bar {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 42px;
+  grid-template-columns: minmax(0, 1fr) 42px;
   gap: 10px;
   margin-top: 18px;
 }
@@ -514,10 +552,17 @@ h2 {
   font-weight: 700;
 }
 
+.context-rail,
 .inspector {
   display: grid;
   align-content: start;
   gap: 16px;
+}
+
+.muted-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
 }
 
 .inspector-block {
@@ -568,6 +613,11 @@ h2 {
   line-height: 1.5;
 }
 
+.audit-list small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .knowledge-meter {
   height: 9px;
   overflow: hidden;
@@ -608,14 +658,12 @@ h2 {
 .document-form {
   display: grid;
   gap: 10px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
 }
 
+.document-form h2,
 .document-form h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .document-form label,
@@ -644,6 +692,60 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.document-table,
+.review-list {
+  display: grid;
+  gap: 12px;
+}
+
+.document-table article,
+.review-list article {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.document-table article div,
+.review-list article div:first-child {
+  min-width: 0;
+}
+
+.document-table strong,
+.review-list strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.document-table span,
+.review-list p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.review-list article {
+  align-items: flex-start;
+}
+
+.review-list p {
+  margin-bottom: 10px;
+}
+
+.status-chip {
+  align-self: flex-start;
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  color: var(--accent-dark);
+  border-radius: 999px;
+  background: rgba(15, 122, 104, 0.1);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .roadmap-list li {
@@ -721,6 +823,13 @@ h2 {
   padding: 22px;
 }
 
+.compact-band {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px;
+}
+
 .architecture-flow {
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -763,7 +872,8 @@ h2 {
   animation-delay: 80ms;
 }
 
-.content-grid {
+.workspace-grid {
+  animation: riseIn 560ms ease both;
   animation-delay: 150ms;
 }
 
@@ -782,6 +892,7 @@ h2 {
   }
 
   .content-grid,
+  .workspace-grid,
   .architecture-band {
     grid-template-columns: 1fr;
   }
@@ -798,6 +909,11 @@ h2 {
   }
 
   .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workspace-header {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -831,5 +947,10 @@ h2 {
 
   .document-form-row {
     grid-template-columns: 1fr;
+  }
+
+  .document-table article,
+  .review-list article {
+    flex-direction: column;
   }
 }
