@@ -53,6 +53,10 @@ const viewIcons = {
 const copy = {
   "zh-CN": {
     appSubtitle: "学校课程智能体 MVP",
+    newChat: "新的课程问题",
+    quickPrompts: "示例问题",
+    currentCourse: "当前课程",
+    providerPath: "Next.js API -> RAG Gateway -> Model Gateway",
     views: {
       assistant: "课程问答",
       courses: "课程资料",
@@ -71,23 +75,23 @@ const copy = {
     },
     headers: {
       assistant: {
-        eyebrow: "课程问答",
-        title: "先回答一个问题，再进入引用和教师审核。",
-        body: "默认工作区只保留学生最常用的问答流程；资料、审核和审计放到各自页面里。",
+        eyebrow: "CourseMind Assistant",
+        title: "带引用的课程问答工作台",
+        body: "学生提问、RAG 检索、模型回答、教师审核和审计链路集中在一个可演示的课程空间里。",
       },
       courses: {
-        eyebrow: "课程资料",
-        title: "管理课程资料入库任务和知识库状态。",
+        eyebrow: "Knowledge Base",
+        title: "课程资料入库任务",
         body: "这里先做元数据级入库，后续替换为真实文件上传、解析、切片和索引。",
       },
       teacher: {
-        eyebrow: "教师审核",
-        title: "审核智能体回答，沉淀教师修正和规范。",
-        body: "教师审核是后续固化学校规范、评分标准和老师风格的数据来源。",
+        eyebrow: "Teacher Review",
+        title: "教师审核队列",
+        body: "教师修正会成为后续固化学校规范、评分标准和老师风格的数据来源。",
       },
       audit: {
-        eyebrow: "治理审计",
-        title: "追踪资料入库、回答生成和教师审核动作。",
+        eyebrow: "Audit Trail",
+        title: "治理审计记录",
         body: "审计记录帮助学校知道每条回答从哪里来、谁审核过、哪些资料进入过知识库。",
       },
     },
@@ -108,15 +112,17 @@ const copy = {
       askLabel: "输入课程问题",
       placeholder: "向当前课程提问",
       send: "发送问题",
-      evidence: "回答依据",
+      evidence: "引用依据",
       noEvidence: "提问后会显示引用资料。",
       guardrails: "回答护栏",
-      review: "审核状态",
+      review: "教师审核",
       provider: "Provider",
       pending: "下一次回答会创建一条待教师审核记录。",
       couldNotLoad: "无法加载演示课程。",
       requestFailed: "回答请求失败",
       reviewFailed: "教师审核更新失败",
+      contextReady: "课程上下文已就绪",
+      traceTitle: "检索链路",
     },
     courses: {
       overview: "知识库概览",
@@ -185,6 +191,10 @@ const copy = {
   },
   "en-US": {
     appSubtitle: "School course agent MVP",
+    newChat: "New course question",
+    quickPrompts: "Suggested prompts",
+    currentCourse: "Current course",
+    providerPath: "Next.js API -> RAG Gateway -> Model Gateway",
     views: {
       assistant: "Assistant",
       courses: "Materials",
@@ -203,23 +213,23 @@ const copy = {
     },
     headers: {
       assistant: {
-        eyebrow: "Course Q&A",
-        title: "Answer one course question, then review citations and status.",
-        body: "The default workspace now focuses on the student Q&A flow. Materials, review, and audit have their own surfaces.",
+        eyebrow: "CourseMind Assistant",
+        title: "Cited course Q&A workspace",
+        body: "Student questions, RAG retrieval, model answers, teacher review, and audit records are kept in one demo course space.",
       },
       courses: {
-        eyebrow: "Course materials",
-        title: "Manage ingestion tasks and knowledge base status.",
+        eyebrow: "Knowledge Base",
+        title: "Course material ingestion",
         body: "This is metadata-level ingestion first. Real file upload, parsing, chunking, and indexing come next.",
       },
       teacher: {
-        eyebrow: "Teacher review",
-        title: "Review agent answers and retain teacher corrections.",
-        body: "Teacher review data later becomes the source for school norms, rubrics, and teacher style.",
+        eyebrow: "Teacher Review",
+        title: "Teacher review queue",
+        body: "Teacher corrections later become the source for school norms, rubrics, and teacher style.",
       },
       audit: {
-        eyebrow: "Governance audit",
-        title: "Track ingestion, answer generation, and review actions.",
+        eyebrow: "Audit Trail",
+        title: "Governance audit records",
         body: "Audit records help the school inspect where answers came from and who reviewed them.",
       },
     },
@@ -243,12 +253,14 @@ const copy = {
       evidence: "Evidence",
       noEvidence: "Ask a question to show cited sources.",
       guardrails: "Guardrails",
-      review: "Review status",
+      review: "Teacher review",
       provider: "Provider",
       pending: "Next answer will create a pending teacher review record.",
       couldNotLoad: "Could not load demo courses.",
       requestFailed: "Answer request failed",
       reviewFailed: "Teacher review update failed",
+      contextReady: "Course context ready",
+      traceTitle: "Retrieval path",
     },
     courses: {
       overview: "Knowledge base overview",
@@ -317,6 +329,10 @@ const copy = {
   },
 } satisfies Record<AppLocale, {
   appSubtitle: string;
+  newChat: string;
+  quickPrompts: string;
+  currentCourse: string;
+  providerPath: string;
   views: Record<WorkspaceView, string>;
   roles: Record<CourseRole, string>;
   prompts: Record<CourseRole, string>;
@@ -360,6 +376,11 @@ const documentTitles: Record<AppLocale, Record<string, string>> = {
   "en-US": {},
 };
 
+const fallbackCourseSummaries = [
+  { id: "ai-101", documentCount: 3 },
+  { id: "data-201", documentCount: 2 },
+];
+
 function createSeedMessages(locale: AppLocale): ChatMessage[] {
   const text = copy[locale];
 
@@ -371,7 +392,7 @@ function createSeedMessages(locale: AppLocale): ChatMessage[] {
 
 function getCourseTitle(course: CourseSnapshot["course"] | undefined, locale: AppLocale) {
   if (!course) {
-    return copy[locale].assistant.loading;
+    return courseTitles[locale]["ai-101"] ?? copy[locale].assistant.loading;
   }
 
   return courseTitles[locale][course.id] ?? course.title;
@@ -406,6 +427,7 @@ export default function Home() {
     [courseId, courses],
   );
   const header = text.headers[activeView];
+  const visibleCitations = lastResponse?.citations ?? [];
 
   useEffect(() => {
     let mounted = true;
@@ -462,6 +484,14 @@ export default function Home() {
     setMessages(createSeedMessages(nextLocale));
     setLastResponse(null);
     setDocumentNotice(null);
+    setError(null);
+  }
+
+  function startNewQuestion() {
+    setActiveView("assistant");
+    setPrompt(text.prompts[role]);
+    setMessages(createSeedMessages(locale));
+    setLastResponse(null);
     setError(null);
   }
 
@@ -570,11 +600,9 @@ export default function Home() {
     await refreshAuditEvents();
   }
 
-  const visibleCitations = lastResponse?.citations ?? [];
-
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <div className="chat-app">
+      <aside className="chat-sidebar">
         <div className="brand">
           <div className="brand-mark">CM</div>
           <div>
@@ -583,13 +611,103 @@ export default function Home() {
           </div>
         </div>
 
-        <nav className="nav-stack" aria-label="Workspace">
+        <button className="new-chat-button" onClick={startNewQuestion} type="button">
+          <MessagesSquare aria-hidden="true" />
+          <span>{text.newChat}</span>
+        </button>
+
+        <section className="sidebar-section">
+          <p>{text.currentCourse}</p>
+          <div className="course-list">
+            {courses.length > 0
+              ? courses.map((item) => (
+                  <button
+                    className={courseId === item.course.id ? "course-item active" : "course-item"}
+                    key={item.course.id}
+                    onClick={() => setCourseId(item.course.id)}
+                    type="button"
+                  >
+                    <span>{getCourseTitle(item.course, locale)}</span>
+                    <small>{item.documents.length} docs</small>
+                  </button>
+                ))
+              : fallbackCourseSummaries.map((item) => (
+                  <button
+                    className={courseId === item.id ? "course-item active" : "course-item"}
+                    key={item.id}
+                    onClick={() => setCourseId(item.id)}
+                    type="button"
+                  >
+                    <span>{courseTitles[locale][item.id]}</span>
+                    <small>{item.documentCount} docs</small>
+                  </button>
+                ))}
+          </div>
+        </section>
+
+        <section className="sidebar-section">
+          <p>Workspace</p>
+          <nav className="nav-stack" aria-label="Workspace">
+            {(Object.keys(text.views) as WorkspaceView[]).map((view) => {
+              const Icon = viewIcons[view];
+              const count = view === "teacher" ? reviewItems.length : view === "audit" ? auditEvents.length : undefined;
+
+              return (
+                <button
+                  className={activeView === view ? "nav-item active" : "nav-item"}
+                  key={view}
+                  onClick={() => setActiveView(view)}
+                  type="button"
+                >
+                  <Icon aria-hidden="true" />
+                  <span>{text.views[view]}</span>
+                  {count !== undefined ? <small>{count}</small> : null}
+                </button>
+              );
+            })}
+          </nav>
+        </section>
+
+        <div className="sidebar-controls">
+          <div className="role-switcher" aria-label={text.nav.role}>
+            {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
+              <button className={role === item ? "role-tab active" : "role-tab"} key={item} onClick={() => updateRole(item)} type="button">
+                {text.roles[item]}
+              </button>
+            ))}
+          </div>
+
+          <div className="locale-switcher" aria-label={text.nav.language}>
+            <Languages aria-hidden="true" />
+            {locales.map((item) => (
+              <button className={locale === item ? "locale-tab active" : "locale-tab"} key={item} onClick={() => updateLocale(item)} type="button">
+                {item === "zh-CN" ? "中文" : "English"}
+              </button>
+            ))}
+          </div>
+        </div>
+      </aside>
+
+      <main className="chat-main">
+        <header className="chat-topbar">
+          <div>
+            <p className="eyebrow">{header.eyebrow}</p>
+            <h1>{header.title}</h1>
+            <span>{getCourseTitle(selectedCourse?.course, locale)} · {text.roles[role]}</span>
+          </div>
+          <button className="primary-action" onClick={() => setActiveView("courses")} type="button">
+            <Upload aria-hidden="true" />
+            {text.views.courses}
+          </button>
+        </header>
+
+        <nav className="mobile-view-tabs" aria-label="Mobile workspace">
           {(Object.keys(text.views) as WorkspaceView[]).map((view) => {
             const Icon = viewIcons[view];
 
             return (
               <button
-                className={activeView === view ? "nav-item active" : "nav-item"}
+                className={activeView === view ? "mobile-view-tab active" : "mobile-view-tab"}
                 key={view}
                 onClick={() => setActiveView(view)}
                 type="button"
@@ -601,70 +719,25 @@ export default function Home() {
           })}
         </nav>
 
-        <div className="course-switcher">
-          <label htmlFor="course-select">{text.nav.course}</label>
-          <select id="course-select" value={courseId} onChange={(event) => setCourseId(event.target.value)}>
-            {courses.map((item) => (
-              <option key={item.course.id} value={item.course.id}>
-                {getCourseTitle(item.course, locale)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="role-switcher" aria-label={text.nav.role}>
-          {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
-            <button className={role === item ? "role-tab active" : "role-tab"} key={item} onClick={() => updateRole(item)} type="button">
-              {text.roles[item]}
-            </button>
-          ))}
-        </div>
-
-        <div className="locale-switcher" aria-label={text.nav.language}>
-          <Languages aria-hidden="true" />
-          {locales.map((item) => (
-            <button className={locale === item ? "locale-tab active" : "locale-tab"} key={item} onClick={() => updateLocale(item)} type="button">
-              {item === "zh-CN" ? "中文" : "English"}
-            </button>
-          ))}
-        </div>
-
-        <div className="status-panel">
-          <span className="status-dot" />
-          <div>
-            <strong>{text.nav.statusTitle}</strong>
-            <span>{text.nav.statusBody}</span>
-          </div>
-        </div>
-      </aside>
-
-      <main className="workspace">
-        <header className="workspace-header">
-          <div>
-            <p className="eyebrow">{header.eyebrow}</p>
-            <h1>{header.title}</h1>
-            <p>{header.body}</p>
-          </div>
-          <button className="primary-action" onClick={() => setActiveView("courses")} type="button">
-            <Upload aria-hidden="true" />
-            {text.views.courses}
-          </button>
-        </header>
-
         {activeView === "assistant" ? (
-          <section className="workspace-grid assistant-workspace">
-            <div className="assistant-panel">
-              <div className="panel-heading">
-                <div>
-                  <p className="eyebrow">{text.views.assistant}</p>
-                  <h2>{getCourseTitle(selectedCourse?.course, locale)}</h2>
+          <section className="conversation-shell">
+            <div className="conversation-scroll" aria-live="polite">
+              <div className="welcome-panel">
+                <span>{text.assistant.contextReady}</span>
+                <h2>{header.body}</h2>
+                <div className="quick-prompts" aria-label={text.quickPrompts}>
+                  {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
+                    <button key={item} onClick={() => setPrompt(text.prompts[item])} type="button">
+                      {text.roles[item]}
+                    </button>
+                  ))}
                 </div>
-                <span className="model-badge">{text.roles[role]}</span>
               </div>
 
-              <div className="chat-feed" aria-live="polite">
-                {messages.map((message) => (
-                  <article className={message.kind === "user" ? "message user-message" : "message assistant-message"} key={message.id}>
+              {messages.map((message) => (
+                <article className={message.kind === "user" ? "message user-message" : "message assistant-message"} key={message.id}>
+                  <div className="message-avatar">{message.kind === "user" ? text.roles[role].slice(0, 1) : "CM"}</div>
+                  <div className="message-body">
                     <span>{message.kind === "user" ? text.roles[role] : "CourseMind"}</span>
                     <p>{message.text}</p>
                     {message.sources ? (
@@ -676,143 +749,77 @@ export default function Home() {
                         ))}
                       </div>
                     ) : null}
-                  </article>
-                ))}
-              </div>
+                  </div>
+                </article>
+              ))}
 
-              {error ? <p className="error-line">{error}</p> : null}
-
-              <form className="prompt-bar" onSubmit={handleSubmit}>
-                <input
-                  aria-label={text.assistant.askLabel}
-                  onChange={(event) => setPrompt(event.target.value)}
-                  placeholder={text.assistant.placeholder}
-                  value={prompt}
-                />
-                <button className="send-button" disabled={isLoading} type="submit" aria-label={text.assistant.send}>
-                  <Send aria-hidden="true" />
-                </button>
-              </form>
+              {isLoading ? (
+                <article className="message assistant-message">
+                  <div className="message-avatar">CM</div>
+                  <div className="message-body">
+                    <span>CourseMind</span>
+                    <p className="thinking">Retrieving course context</p>
+                  </div>
+                </article>
+              ) : null}
             </div>
 
-            <aside className="context-rail">
-              <section className="inspector-block">
-                <h2>{text.assistant.evidence}</h2>
-                {visibleCitations.length > 0 ? (
-                  <ol className="citation-list">
-                    {visibleCitations.map((citation) => (
-                      <li key={citation.documentId}>
-                        <strong>{getDocumentTitle(citation.documentId, citation.title, locale)}</strong>
-                        <span>{citation.excerpt ?? citation.locator}</span>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="muted-copy">{text.assistant.noEvidence}</p>
-                )}
-              </section>
+            {error ? <p className="error-line">{error}</p> : null}
 
-              <section className="inspector-block trace-block">
-                <div className="panel-heading compact">
-                  <h2>{text.assistant.review}</h2>
-                  <ShieldCheck aria-hidden="true" />
-                </div>
-                <p>{lastResponse?.review.rubricNotes ?? text.assistant.pending}</p>
-                <span>{lastResponse ? `${text.assistant.provider}: ${lastResponse.ragTrace.provider}` : `${text.assistant.provider}: mock`}</span>
-              </section>
-            </aside>
+            <form className="composer" onSubmit={handleSubmit}>
+              <textarea
+                aria-label={text.assistant.askLabel}
+                onChange={(event) => setPrompt(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    event.currentTarget.form?.requestSubmit();
+                  }
+                }}
+                placeholder={text.assistant.placeholder}
+                rows={3}
+                value={prompt}
+              />
+              <div className="composer-footer">
+                <span>{text.providerPath}</span>
+                <button className="send-button" disabled={isLoading || !prompt.trim()} type="submit" aria-label={text.assistant.send}>
+                  <Send aria-hidden="true" />
+                </button>
+              </div>
+            </form>
           </section>
         ) : null}
 
         {activeView === "courses" ? (
-          <section className="workspace-grid">
-            <div className="data-panel">
-              <div className="panel-heading">
-                <h2>{text.courses.materialList}</h2>
-                <span className="sync-badge">{selectedCourse?.documents.length ?? 0}</span>
+          <section className="workspace-board">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">{header.eyebrow}</p>
+                <h2>{header.body}</h2>
               </div>
-              <div className="document-table">
-                {(selectedCourse?.documents ?? []).map((document) => (
-                  <article key={document.id}>
-                    <div>
-                      <strong>{getDocumentTitle(document.id, document.title, locale)}</strong>
-                      <span>{text.sourceTypes[document.sourceType]} · {text.visibility[document.visibility]}</span>
-                    </div>
-                    <span className="status-chip">{text.statuses[document.ingestionStatus]}</span>
-                  </article>
-                ))}
-              </div>
+              <span className="sync-badge">{selectedCourse?.documents.length ?? 0}</span>
             </div>
-
-            <aside className="context-rail">
-              <section className="inspector-block">
-                <h2>{text.courses.overview}</h2>
-                <div className="knowledge-meter">
-                  <span style={{ width: `${selectedCourse?.coveragePercent ?? 0}%` }} />
-                </div>
-                <dl className="mini-stats">
+            <div className="document-table">
+              {(selectedCourse?.documents ?? []).map((document) => (
+                <article key={document.id}>
                   <div>
-                    <dt>{text.courses.docs}</dt>
-                    <dd>{selectedCourse?.documents.length ?? 0}</dd>
+                    <strong>{getDocumentTitle(document.id, document.title, locale)}</strong>
+                    <span>{text.sourceTypes[document.sourceType]} · {text.visibility[document.visibility]}</span>
                   </div>
-                  <div>
-                    <dt>{text.courses.chunks}</dt>
-                    <dd>{selectedCourse?.indexedChunks.toLocaleString(locale) ?? 0}</dd>
-                  </div>
-                  <div>
-                    <dt>{text.courses.queue}</dt>
-                    <dd>{selectedCourse?.pendingReviewCount ?? 0}</dd>
-                  </div>
-                </dl>
-              </section>
-
-              <section className="inspector-block">
-                <form className="document-form" onSubmit={handleCreateDocument}>
-                  <h2>{text.courses.addMaterial}</h2>
-                  <label htmlFor="document-title">{text.courses.titleLabel}</label>
-                  <input
-                    id="document-title"
-                    onChange={(event) => setDocumentTitle(event.target.value)}
-                    placeholder={text.courses.titlePlaceholder}
-                    value={documentTitle}
-                  />
-                  <div className="document-form-row">
-                    <label>
-                      <span>{text.courses.sourceType}</span>
-                      <select onChange={(event) => setDocumentSourceType(event.target.value as CourseDocumentCreateRequest["sourceType"])} value={documentSourceType}>
-                        {sourceTypes.map((sourceType) => (
-                          <option key={sourceType} value={sourceType}>
-                            {text.sourceTypes[sourceType]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>{text.courses.visibility}</span>
-                      <select onChange={(event) => setDocumentVisibility(event.target.value as CourseDocumentCreateRequest["visibility"])} value={documentVisibility}>
-                        {visibilityTypes.map((visibility) => (
-                          <option key={visibility} value={visibility}>
-                            {text.visibility[visibility]}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                  {documentNotice ? <p className="success-line">{documentNotice}</p> : null}
-                  <button className="secondary-action" disabled={isCreatingDocument || !documentTitle.trim()} type="submit">
-                    <FilePlus2 aria-hidden="true" />
-                    {isCreatingDocument ? text.courses.submitting : text.courses.submit}
-                  </button>
-                </form>
-              </section>
-            </aside>
+                  <span className="status-chip">{text.statuses[document.ingestionStatus]}</span>
+                </article>
+              ))}
+            </div>
           </section>
         ) : null}
 
         {activeView === "teacher" ? (
-          <section className="data-panel full-span">
-            <div className="panel-heading">
-              <h2>{text.teacher.queueTitle}</h2>
+          <section className="workspace-board">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">{header.eyebrow}</p>
+                <h2>{header.body}</h2>
+              </div>
               <span className="sync-badge">{reviewItems.length}</span>
             </div>
             {reviewItems.length > 0 ? (
@@ -872,50 +879,143 @@ export default function Home() {
         ) : null}
 
         {activeView === "audit" ? (
-          <section className="workspace-grid">
-            <div className="data-panel">
-              <div className="panel-heading">
-                <h2>{text.views.audit}</h2>
-                <span className="sync-badge">{auditEvents.length}</span>
+          <section className="workspace-board">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">{header.eyebrow}</p>
+                <h2>{header.body}</h2>
               </div>
-              {auditEvents.length > 0 ? (
-                <ul className="audit-list">
-                  {auditEvents.map((event) => (
-                    <li key={event.id}>
-                      <strong>{text.audit.eventTypes[event.type]}</strong>
-                      <span>{event.summary}</span>
-                      <small>{text.audit.target}: {event.targetType}</small>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted-copy">{text.audit.empty}</p>
-              )}
+              <span className="sync-badge">{auditEvents.length}</span>
             </div>
-
-            <aside className="context-rail">
-              <section className="inspector-block">
-                <h2>{text.audit.governanceTitle}</h2>
-                <ul className="roadmap-list">
-                  {text.audit.governanceItems.map((item, index) => (
-                    <li className={index < 5 ? "done" : "active"} key={item}>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-              <section className="architecture-band compact-band" aria-label="Architecture">
-                {["Next.js Web", "API", "RAG Gateway", "Model Gateway"].map((item, index) => (
-                  <span className="architecture-flow-item" key={item}>
-                    {index > 0 ? <ArrowRight aria-hidden="true" /> : null}
-                    <span>{item}</span>
-                  </span>
+            {auditEvents.length > 0 ? (
+              <ul className="audit-list">
+                {auditEvents.map((event) => (
+                  <li key={event.id}>
+                    <strong>{text.audit.eventTypes[event.type]}</strong>
+                    <span>{event.summary}</span>
+                    <small>{text.audit.target}: {event.targetType}</small>
+                  </li>
                 ))}
-              </section>
-            </aside>
+              </ul>
+            ) : (
+              <p className="muted-copy">{text.audit.empty}</p>
+            )}
           </section>
         ) : null}
       </main>
+
+      <aside className="inspector-rail">
+        {activeView === "courses" ? (
+          <section className="inspector-block">
+            <form className="document-form" onSubmit={handleCreateDocument}>
+              <h2>{text.courses.addMaterial}</h2>
+              <label htmlFor="document-title">{text.courses.titleLabel}</label>
+              <input
+                id="document-title"
+                onChange={(event) => setDocumentTitle(event.target.value)}
+                placeholder={text.courses.titlePlaceholder}
+                value={documentTitle}
+              />
+              <div className="document-form-row">
+                <label>
+                  <span>{text.courses.sourceType}</span>
+                  <select onChange={(event) => setDocumentSourceType(event.target.value as CourseDocumentCreateRequest["sourceType"])} value={documentSourceType}>
+                    {sourceTypes.map((sourceType) => (
+                      <option key={sourceType} value={sourceType}>
+                        {text.sourceTypes[sourceType]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>{text.courses.visibility}</span>
+                  <select onChange={(event) => setDocumentVisibility(event.target.value as CourseDocumentCreateRequest["visibility"])} value={documentVisibility}>
+                    {visibilityTypes.map((visibility) => (
+                      <option key={visibility} value={visibility}>
+                        {text.visibility[visibility]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {documentNotice ? <p className="success-line">{documentNotice}</p> : null}
+              <button className="secondary-action" disabled={isCreatingDocument || !documentTitle.trim()} type="submit">
+                <FilePlus2 aria-hidden="true" />
+                {isCreatingDocument ? text.courses.submitting : text.courses.submit}
+              </button>
+            </form>
+          </section>
+        ) : (
+          <>
+            <section className="inspector-block">
+              <div className="panel-heading">
+                <h2>{text.assistant.evidence}</h2>
+                <ShieldCheck aria-hidden="true" />
+              </div>
+              {visibleCitations.length > 0 ? (
+                <ol className="citation-list">
+                  {visibleCitations.map((citation) => (
+                    <li key={citation.documentId}>
+                      <strong>{getDocumentTitle(citation.documentId, citation.title, locale)}</strong>
+                      <span>{citation.excerpt ?? citation.locator}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="muted-copy">{text.assistant.noEvidence}</p>
+              )}
+            </section>
+
+            <section className="inspector-block trace-block">
+              <h2>{text.assistant.review}</h2>
+              <p>{lastResponse?.review.rubricNotes ?? text.assistant.pending}</p>
+              <span>{lastResponse ? `${text.assistant.provider}: ${lastResponse.ragTrace.provider}` : `${text.assistant.provider}: mock`}</span>
+            </section>
+          </>
+        )}
+
+        <section className="inspector-block">
+          <h2>{activeView === "courses" ? text.courses.overview : text.audit.governanceTitle}</h2>
+          {activeView === "courses" ? (
+            <>
+              <div className="knowledge-meter">
+                <span style={{ width: `${selectedCourse?.coveragePercent ?? 0}%` }} />
+              </div>
+              <dl className="mini-stats">
+                <div>
+                  <dt>{text.courses.docs}</dt>
+                  <dd>{selectedCourse?.documents.length ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>{text.courses.chunks}</dt>
+                  <dd>{selectedCourse?.indexedChunks.toLocaleString(locale) ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>{text.courses.queue}</dt>
+                  <dd>{selectedCourse?.pendingReviewCount ?? 0}</dd>
+                </div>
+              </dl>
+            </>
+          ) : (
+            <ul className="roadmap-list">
+              {text.audit.governanceItems.map((item, index) => (
+                <li className={index < 5 ? "done" : "active"} key={item}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="architecture-band" aria-label="Architecture">
+          {["Next.js Web", "API", "RAG Gateway", "Model Gateway"].map((item, index) => (
+            <span className="architecture-flow-item" key={item}>
+              {index > 0 ? <ArrowRight aria-hidden="true" /> : null}
+              <span>{item}</span>
+            </span>
+          ))}
+        </section>
+      </aside>
     </div>
   );
 }

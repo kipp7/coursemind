@@ -30,6 +30,8 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - The Web demo can create a course material ingestion task from the knowledge base panel; new documents update the course snapshot and create a `course_document.ingestion_requested` audit event.
 - In-memory mock state is now attached to `globalThis` so Next.js dev/demo API routes share course, review, and audit state more reliably within one running process.
 - The Web frontend was simplified from one overloaded dashboard into four separate workspaces: course Q&A, course materials, teacher review, and audit records.
+- The Web MVP is now the primary delivery surface. Desktop delivery is deferred as a future shell around the same Web experience.
+- The Web UI has adopted the Xiaoyu workbench visual direction: mint green/jade accents, soft glass panels, Chinese-first school workspace tone, and a CourseMind-specific chat/workbench layout.
 
 ## Constraints
 
@@ -54,6 +56,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 10. Continue polishing Chinese school-facing copy and add formal i18n routing later if the MVP needs shareable language-specific URLs.
 11. Continue extracting frontend components once the workspace information architecture stabilizes.
 12. Keep future work committed and pushed in small coherent units.
+13. Evolve the Web MVP toward a Xiaoyu-style school workbench with distinct student Q&A and teacher review/dashboard surfaces.
 
 ## Done Criteria
 

@@ -23,4 +23,5 @@ ctx-*.log
 *.db
 *.sqlite
 *.sqlite3
+04_aI-conversation/
 # /memory-context-workspace
