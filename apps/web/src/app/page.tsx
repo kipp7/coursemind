@@ -1,5 +1,6 @@
 "use client";
 
+import type { AnswerResponse, CourseRole, CourseSnapshot } from "@coursemind/contracts";
 import {
   ArrowRight,
   BarChart3,
@@ -8,181 +9,205 @@ import {
   MessagesSquare,
   Play,
   Send,
+  ShieldCheck,
   SlidersHorizontal,
   Upload,
   WandSparkles,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-type CourseId = "ai" | "data" | "design";
-type RoleId = "student" | "teacher" | "admin";
-type Message = {
-  id: number;
+type ChatMessage = {
+  id: string;
   kind: "user" | "assistant";
   text: string;
   sources?: string[];
 };
 
-const courseProfiles: Record<
-  CourseId,
-  {
-    title: string;
-    documents: number;
-    chunks: string;
-    pending: number;
-    coverage: string;
-    prompt: string;
-    reply: string;
-  }
-> = {
-  ai: {
-    title: "人工智能导论",
-    documents: 128,
-    chunks: "4,812",
-    pending: 6,
-    coverage: "82%",
-    prompt: "帮我把这节课整理成考前复习提纲",
-    reply:
-      "我会按考试复习来整理：先列核心概念，再标出易混点，最后给你 5 道自测题。当前课程资料显示，本周重点是 RAG、向量检索、提示词约束和微调边界。",
-  },
-  data: {
-    title: "数据结构",
-    documents: 96,
-    chunks: "3,407",
-    pending: 3,
-    coverage: "76%",
-    prompt: "用例子解释一下二叉树遍历为什么会考",
-    reply:
-      "二叉树遍历经常考，是因为它同时检查递归、栈、队列和结构化思维。建议把前序、中序、后序、层序分别和一道手算题绑定记忆。",
-  },
-  design: {
-    title: "数字媒体设计",
-    documents: 74,
-    chunks: "2,105",
-    pending: 9,
-    coverage: "68%",
-    prompt: "帮我从老师课件里提炼这次设计作业的评分点",
-    reply:
-      "这次作业的评分点主要是目标用户是否明确、信息层级是否稳定、视觉系统是否一致，以及作品说明能否解释设计决策。",
-  },
-};
-
-const rolePrompts: Record<RoleId, string> = {
-  student: "帮我把这节课整理成考前复习提纲",
-  teacher: "根据本周课程资料，生成一份课堂讨论题和参考答案",
-  admin: "汇总本课程知识库的待审核资料和风险项",
-};
-
 const navItems = [
-  { id: "assistant", label: "智能答疑", icon: MessagesSquare },
-  { id: "courses", label: "课程空间", icon: Library },
-  { id: "teacher", label: "教师配置", icon: SlidersHorizontal },
-  { id: "analytics", label: "学习洞察", icon: BarChart3 },
+  { id: "assistant", label: "Assistant", icon: MessagesSquare },
+  { id: "courses", label: "Courses", icon: Library },
+  { id: "teacher", label: "Teacher review", icon: SlidersHorizontal },
+  { id: "analytics", label: "Audit trail", icon: BarChart3 },
 ];
 
-const initialMessages: Message[] = [
-  {
-    id: 1,
-    kind: "user",
-    text: "老师这周讲的 RAG 和微调到底有什么区别？我应该什么时候用微调？",
-  },
-  {
-    id: 2,
-    kind: "assistant",
-    text: "对课程智能体来说，RAG 用来读取实时课程资料，微调用来学习稳定的回答风格或评分规范。第一版建议先做 RAG，因为课程内容会频繁变化。",
-    sources: ["课程讲义 Ch.04 · p12", "教学大纲 · 第 3 周"],
-  },
-];
+const roleLabels: Record<CourseRole, string> = {
+  student: "Student",
+  teacher: "Teacher",
+  admin: "Admin",
+};
+
+const rolePrompts: Record<CourseRole, string> = {
+  student: "What is the difference between RAG and fine-tuning in this course?",
+  teacher: "Draft a cited answer and mark it for teacher review.",
+  admin: "Summarize the provider boundary and audit data for this answer.",
+};
 
 export default function Home() {
   const [activeNav, setActiveNav] = useState("assistant");
-  const [courseId, setCourseId] = useState<CourseId>("ai");
-  const [role, setRole] = useState<RoleId>("student");
-  const [prompt, setPrompt] = useState(courseProfiles.ai.prompt);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const course = courseProfiles[courseId];
+  const [courses, setCourses] = useState<CourseSnapshot[]>([]);
+  const [courseId, setCourseId] = useState("ai-101");
+  const [role, setRole] = useState<CourseRole>("student");
+  const [prompt, setPrompt] = useState(rolePrompts.student);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "seed-user",
+      kind: "user",
+      text: "Should we build this course agent with RAG first, or fine-tune a model immediately?",
+    },
+    {
+      id: "seed-assistant",
+      kind: "assistant",
+      text: "Start with RAG. Course material changes often, so the MVP should retrieve current course context, answer with citations, and send the response into teacher review before any fine-tuning work.",
+      sources: ["Course syllabus", "Lecture 4: RAG and course Q&A"],
+    },
+  ]);
+  const [lastResponse, setLastResponse] = useState<AnswerResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const nextId = useMemo(() => messages.length + 1, [messages.length]);
+  useEffect(() => {
+    let mounted = true;
 
-  function updateCourse(value: CourseId) {
-    setCourseId(value);
-    setPrompt(courseProfiles[value].prompt);
+    async function loadCourses() {
+      const response = await fetch("/api/courses");
+      const data = (await response.json()) as { courses: CourseSnapshot[] };
+
+      if (mounted) {
+        setCourses(data.courses);
+        setCourseId(data.courses[0]?.course.id ?? "ai-101");
+      }
+    }
+
+    loadCourses().catch(() => {
+      if (mounted) {
+        setError("Could not load demo courses.");
+      }
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const selectedCourse = useMemo(
+    () => courses.find((item) => item.course.id === courseId) ?? courses[0],
+    [courseId, courses],
+  );
+  const evidenceItems = useMemo(() => {
+    if (lastResponse) {
+      return lastResponse.citations.map((citation) => ({
+        id: citation.documentId,
+        title: citation.title,
+        detail: citation.excerpt ?? citation.locator ?? "Retrieved course evidence",
+      }));
+    }
+
+    return (selectedCourse?.documents.slice(0, 3) ?? []).map((document) => ({
+      id: document.id,
+      title: document.title,
+      detail: document.ingestionStatus,
+    }));
+  }, [lastResponse, selectedCourse]);
+
+  function updateRole(nextRole: CourseRole) {
+    setRole(nextRole);
+    setPrompt(rolePrompts[nextRole]);
   }
 
-  function updateRole(value: RoleId) {
-    setRole(value);
-    setPrompt(rolePrompts[value]);
-  }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-  function runDemo(event?: FormEvent) {
-    event?.preventDefault();
-    const trimmedPrompt = prompt.trim();
-    if (!trimmedPrompt) return;
+    if (!prompt.trim() || !selectedCourse) {
+      return;
+    }
 
+    const question = prompt.trim();
+    setIsLoading(true);
+    setError(null);
     setMessages((current) => [
       ...current,
-      { id: nextId, kind: "user", text: trimmedPrompt },
-      {
-        id: nextId + 1,
-        kind: "assistant",
-        text: course.reply,
-        sources: ["课程讲义 · 最新版本", "教师 FAQ · 已审核"],
-      },
+      { id: `user-${Date.now()}`, kind: "user", text: question },
     ]);
+
+    try {
+      const response = await fetch("/api/agent/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: selectedCourse.course.id, role, question }),
+      });
+
+      const data = (await response.json()) as AnswerResponse | { error: string };
+
+      if (!response.ok || "error" in data) {
+        throw new Error("error" in data ? data.error : "Answer request failed");
+      }
+
+      setLastResponse(data);
+      setMessages((current) => [
+        ...current,
+        {
+          id: data.answerMessage.id,
+          kind: "assistant",
+          text: data.answerMessage.content,
+          sources: data.citations.map((citation) => citation.title),
+        },
+      ]);
+      setPrompt("");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Answer request failed");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
     <div className="app-shell">
-      <aside className="sidebar" aria-label="课程导航">
+      <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">CM</span>
+          <div className="brand-mark">CM</div>
           <div>
             <strong>CourseMind</strong>
-            <span>校园课程智能体</span>
+            <span>School course agent MVP</span>
           </div>
         </div>
 
-        <nav className="nav-stack" aria-label="主导航">
+        <nav className="nav-stack" aria-label="Main navigation">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
-                className={`nav-item ${activeNav === item.id ? "active" : ""}`}
+                className={activeNav === item.id ? "nav-item active" : "nav-item"}
                 key={item.id}
                 onClick={() => setActiveNav(item.id)}
                 type="button"
               >
                 <Icon aria-hidden="true" />
-                {item.label}
+                <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
         <div className="course-switcher">
-          <label htmlFor="courseSelect">当前课程</label>
-          <select
-            id="courseSelect"
-            onChange={(event) => updateCourse(event.target.value as CourseId)}
-            value={courseId}
-          >
-            {Object.entries(courseProfiles).map(([id, profile]) => (
-              <option key={id} value={id}>
-                {profile.title}
+          <label htmlFor="course-select">Course space</label>
+          <select id="course-select" value={courseId} onChange={(event) => setCourseId(event.target.value)}>
+            {courses.map((item) => (
+              <option key={item.course.id} value={item.course.id}>
+                {item.course.title}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="role-switcher" aria-label="角色切换">
-          {(["student", "teacher", "admin"] as RoleId[]).map((roleId) => (
+        <div className="role-switcher" aria-label="Role switcher">
+          {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
             <button
-              className={`role-tab ${role === roleId ? "active" : ""}`}
-              key={roleId}
-              onClick={() => updateRole(roleId)}
+              className={role === item ? "role-tab active" : "role-tab"}
+              key={item}
+              onClick={() => updateRole(item)}
               type="button"
             >
-              {roleId === "student" ? "学生" : roleId === "teacher" ? "教师" : "管理员"}
+              {roleLabels[item]}
             </button>
           ))}
         </div>
@@ -190,8 +215,8 @@ export default function Home() {
         <div className="status-panel">
           <span className="status-dot" />
           <div>
-            <strong>RAG MVP</strong>
-            <span>Dify / RAGFlow / OpenAI-compatible API 可接入</span>
+            <strong>Mock provider online</strong>
+            <span>Dify/RAGFlow adapter boundary preserved</span>
           </div>
         </div>
       </aside>
@@ -199,54 +224,49 @@ export default function Home() {
       <main className="workspace">
         <header className="topbar">
           <div>
-            <p className="eyebrow">学校级 Web 交付原型</p>
-            <h1>课程智能体工作台</h1>
+            <p className="eyebrow">Vertical slice</p>
+            <h1>Ask with course context, cite the answer, queue teacher review.</h1>
           </div>
           <div className="top-actions">
-            <button className="icon-button" title="上传资料" type="button" aria-label="上传资料">
+            <button className="icon-button" title="Upload course material" type="button" aria-label="Upload course material">
               <Upload aria-hidden="true" />
             </button>
-            <button className="primary-action" onClick={() => runDemo()} type="button">
+            <button className="primary-action" type="button">
               <Play aria-hidden="true" />
-              演示流程
+              Run demo
             </button>
           </div>
         </header>
 
-        <section className="hero-strip" aria-label="课程概览">
+        <section className="hero-strip" aria-label="CourseMind overview">
           <div className="hero-overlay">
-            <p>面向学生答疑、教师课程维护、学校统一管理的一体化课程智能体。</p>
-            <div className="hero-metrics" aria-label="MVP 指标">
-              <span>
-                <strong>3</strong>角色
-              </span>
-              <span>
-                <strong>5</strong>资料类型
-              </span>
-              <span>
-                <strong>100%</strong>引用可追溯
-              </span>
+            <div>
+              <p className="eyebrow light">School-ready from day one</p>
+              <h2>Our Web app calls our API first, then the API talks to RAG and model providers.</h2>
             </div>
+            <p>
+              The first MVP keeps student, teacher, citation, review, and provider-swap concerns visible instead of hiding them in prompt text.
+            </p>
           </div>
         </section>
 
         <section className="content-grid">
-          <div className="assistant-panel" data-panel="assistant">
+          <div className="assistant-panel">
             <div className="panel-heading">
               <div>
-                <p className="eyebrow">Student Agent</p>
-                <h2>智能答疑</h2>
+                <p className="eyebrow">Course Q&A</p>
+                <h2>{selectedCourse?.course.title ?? "Loading course"}</h2>
               </div>
-              <span className="model-badge">Qwen / GPT / DeepSeek</span>
+              <span className="model-badge">Role: {roleLabels[role]}</span>
             </div>
 
             <div className="chat-feed" aria-live="polite">
               {messages.map((message) => (
                 <article
-                  className={`message ${message.kind === "user" ? "user-message" : "assistant-message"}`}
+                  className={message.kind === "user" ? "message user-message" : "message assistant-message"}
                   key={message.id}
                 >
-                  <span>{message.kind === "user" ? "学生" : "CourseMind"}</span>
+                  <span>{message.kind === "user" ? roleLabels[role] : "CourseMind"}</span>
                   <p>{message.text}</p>
                   {message.sources ? (
                     <div className="source-list">
@@ -261,97 +281,101 @@ export default function Home() {
               ))}
             </div>
 
-            <form className="prompt-bar" onSubmit={runDemo}>
-              <button className="icon-button" title="选择工具" type="button" aria-label="选择工具">
+            {error ? <p className="error-line">{error}</p> : null}
+
+            <form className="prompt-bar" onSubmit={handleSubmit}>
+              <button className="icon-button" title="Apply guardrails" type="button" aria-label="Apply guardrails">
                 <WandSparkles aria-hidden="true" />
               </button>
               <input
-                aria-label="向课程智能体提问"
-                autoComplete="off"
+                aria-label="Ask a course question"
                 onChange={(event) => setPrompt(event.target.value)}
-                type="text"
+                placeholder="Ask a question about the selected course"
                 value={prompt}
               />
-              <button className="send-button" type="submit" aria-label="发送">
+              <button className="send-button" disabled={isLoading} type="submit" aria-label="Send question">
                 <Send aria-hidden="true" />
               </button>
             </form>
           </div>
 
-          <aside className="inspector" aria-label="右侧信息">
+          <aside className="inspector" aria-label="Answer details">
             <section className="inspector-block">
               <div className="panel-heading compact">
-                <h2>答案依据</h2>
-                <button className="icon-button small" title="查看引用" type="button" aria-label="查看引用">
+                <h2>Answer evidence</h2>
+                <button className="icon-button small" title="View citations" type="button" aria-label="View citations">
                   <ExternalLink aria-hidden="true" />
                 </button>
               </div>
               <ol className="citation-list">
-                <li>
-                  <strong>课程讲义 Ch.04</strong>
-                  <span>RAG、向量检索、生成式问答</span>
-                </li>
-                <li>
-                  <strong>实验手册 Lab 02</strong>
-                  <span>知识库导入与引用检查</span>
-                </li>
-                <li>
-                  <strong>教师 FAQ</strong>
-                  <span>考试范围、作业提交规范</span>
-                </li>
+                {evidenceItems.map((item) => (
+                  <li key={item.id}>
+                    <strong>{item.title}</strong>
+                    <span>{item.detail}</span>
+                  </li>
+                ))}
               </ol>
             </section>
 
             <section className="inspector-block">
               <div className="panel-heading compact">
-                <h2>知识库状态</h2>
-                <span className="sync-badge">已同步</span>
+                <h2>Knowledge base</h2>
+                <span className="sync-badge">Indexed</span>
               </div>
               <div className="knowledge-meter">
-                <span style={{ width: course.coverage }} />
+                <span style={{ width: `${selectedCourse?.coveragePercent ?? 0}%` }} />
               </div>
               <dl className="mini-stats">
                 <div>
-                  <dt>文档</dt>
-                  <dd>{course.documents}</dd>
+                  <dt>Docs</dt>
+                  <dd>{selectedCourse?.documents.length ?? 0}</dd>
                 </div>
                 <div>
-                  <dt>分块</dt>
-                  <dd>{course.chunks}</dd>
+                  <dt>Chunks</dt>
+                  <dd>{selectedCourse?.indexedChunks.toLocaleString() ?? 0}</dd>
                 </div>
                 <div>
-                  <dt>待审核</dt>
-                  <dd>{course.pending}</dd>
+                  <dt>Review</dt>
+                  <dd>{selectedCourse?.pendingReviewCount ?? 0}</dd>
                 </div>
               </dl>
             </section>
 
             <section className="inspector-block">
-              <h2>架构路线</h2>
+              <h2>Governance trace</h2>
               <ul className="roadmap-list">
-                <li className="done">Web MVP 与课程空间</li>
-                <li className="active">RAG 平台接入</li>
-                <li>统一身份与权限</li>
-                <li>教师审核与学习分析</li>
-                <li>基于样本的 LoRA 微调</li>
+                <li className="done">Web calls CourseMind API</li>
+                <li className="done">Shared DTO contracts</li>
+                <li className="active">Mock RAG adapter</li>
+                <li>Teacher review persistence</li>
+                <li>Dify / RAGFlow provider swap</li>
               </ul>
+            </section>
+
+            <section className="inspector-block trace-block">
+              <div className="panel-heading compact">
+                <h2>Review status</h2>
+                <ShieldCheck aria-hidden="true" />
+              </div>
+              <p>{lastResponse?.review.rubricNotes ?? "Next answer will create a pending teacher review record."}</p>
+              <span>{lastResponse ? `Provider: ${lastResponse.ragTrace.provider}` : "Provider: mock"}</span>
             </section>
           </aside>
         </section>
 
-        <section className="architecture-band" aria-label="平台架构">
+        <section className="architecture-band" aria-label="Platform architecture">
           <div>
             <p className="eyebrow">Architecture</p>
-            <h2>先用开源平台跑起来，再把学校能力沉淀成平台</h2>
+            <h2>Provider tools can change. The school business boundary stays ours.</h2>
           </div>
           <div className="architecture-flow">
-            <span>Web 前端</span>
+            <span>Next.js Web</span>
             <ArrowRight aria-hidden="true" />
-            <span>智能体服务层</span>
+            <span>Application API</span>
             <ArrowRight aria-hidden="true" />
-            <span>Dify / RAGFlow</span>
+            <span>RAG Gateway</span>
             <ArrowRight aria-hidden="true" />
-            <span>模型与知识库</span>
+            <span>Model Gateway</span>
           </div>
         </section>
       </main>

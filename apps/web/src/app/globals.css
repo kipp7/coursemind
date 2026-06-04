@@ -446,6 +446,18 @@ h2 {
   background: var(--accent);
 }
 
+.send-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.error-line {
+  margin: 12px 0 0;
+  color: #9f2d20;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .inspector {
   display: grid;
   align-content: start;
@@ -544,6 +556,22 @@ h2 {
 .roadmap-list li.active::before {
   background: var(--gold);
   box-shadow: 0 0 0 5px rgba(185, 120, 18, 0.13);
+}
+
+.trace-block p {
+  margin-bottom: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.trace-block > span {
+  display: inline-flex;
+  padding: 7px 10px;
+  color: var(--ink);
+  border-radius: 8px;
+  background: #eee7db;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .architecture-band {

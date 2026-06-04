@@ -15,6 +15,8 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - `coursemind` is the selected product-style repository name if still available.
 - Five-pass adversarial review added governance, risk, demo, contract, contribution, and CI guardrails.
 - User confirmed Next.js as the Web stack direction.
+- A typed MVP vertical slice has been added: shared contracts, a mock `services/api` course-agent use case, and Next.js API routes for courses and agent answers.
+- The Web app now posts questions to CourseMind's own API boundary and displays citations, review status, and a mock RAG trace.
 
 ## Constraints
 
@@ -30,9 +32,10 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 1. Keep the Next.js MVP usable as the first demo.
 2. Establish docs and memory as project-level source of truth.
 3. Keep local Git and GitHub remote in sync.
-4. Connect an API layer and a RAG provider later.
-5. Keep future work committed and pushed in small coherent units.
-6. Watch GitHub Actions after pushing the Next.js migration.
+4. Add provider adapter interfaces for Dify and RAGFlow.
+5. Persist conversation messages and teacher review records.
+6. Localize the Web demo copy for the intended Chinese school audience.
+7. Keep future work committed and pushed in small coherent units.
 
 ## Done Criteria
 
@@ -42,3 +45,4 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - GitHub auth and identity are verified.
 - Local Git repository is prepared without creating a remote prematurely.
 - Initial project state is committed before further substantial development.
+- Web MVP exercises a typed API boundary instead of only rendering static mock data.

@@ -1,6 +1,8 @@
 # Initial Contracts
 
-These contracts describe the first shared objects the frontend, API, RAG gateway, and model gateway should converge on. They are not implementation code yet.
+These contracts describe the first shared objects the frontend, API, RAG gateway, and model gateway should converge on.
+
+The initial implementation now lives in `libs/contracts/src/index.ts`. Keep this document as the human-readable contract guide and update the package when shapes change.
 
 ## Course
 
@@ -70,4 +72,3 @@ type TeacherReview = {
 ## Design Rule
 
 Frontend code should consume these shapes through a shared contracts package later. It should not invent provider-specific response shapes directly in UI components.
-
