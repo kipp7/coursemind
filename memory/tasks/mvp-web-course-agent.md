@@ -32,6 +32,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - The Web frontend was simplified from one overloaded dashboard into four separate workspaces: course Q&A, course materials, teacher review, and audit records.
 - The Web MVP is now the primary delivery surface. Desktop delivery is deferred as a future shell around the same Web experience.
 - The Web UI has adopted the Xiaoyu workbench visual direction: mint green/jade accents, soft glass panels, Chinese-first school workspace tone, and a CourseMind-specific chat/workbench layout.
+- The Web UI has now shifted from a cluttered multi-workspace dashboard toward a ChatGPT-like course chat shell: left course/session navigation, a single central conversation flow, a fixed bottom composer, and lightweight right-side governance drawers for materials, teacher review, and audit records.
 
 ## Constraints
 
@@ -54,7 +55,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 8. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.
 9. Replace the mock document ingestion task with real file upload, parsing, indexing, and provider adapter handoff.
 10. Continue polishing Chinese school-facing copy and add formal i18n routing later if the MVP needs shareable language-specific URLs.
-11. Continue extracting frontend components once the workspace information architecture stabilizes.
+11. Continue extracting frontend components once the ChatGPT-like course chat information architecture stabilizes.
 12. Keep future work committed and pushed in small coherent units.
 13. Evolve the Web MVP toward a Xiaoyu-style school workbench with distinct student Q&A and teacher review/dashboard surfaces.
 
