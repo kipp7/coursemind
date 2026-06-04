@@ -19,17 +19,15 @@ import {
   BarChart3,
   Check,
   FilePlus2,
-  Languages,
   Library,
-  MessagesSquare,
   PanelRightOpen,
   ShieldCheck,
   SlidersHorizontal,
-  SquarePen,
   Upload,
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CourseChatSidebar } from "./course-chat-sidebar";
 
 type WorkspacePanel = "materials" | "teacher" | "audit";
 
@@ -605,103 +603,26 @@ export default function CourseChatClient() {
 
   return (
     <div className="chat-app">
-      <aside className="chat-sidebar">
-        <div className="brand">
-          <div className="brand-mark">CM</div>
-          <div>
-            <strong>CourseMind</strong>
-            <span>{text.appSubtitle}</span>
-          </div>
-        </div>
-
-        <button className="new-chat-button" onClick={startNewQuestion} type="button">
-          <SquarePen aria-hidden="true" />
-          <span>{text.newChat}</span>
-        </button>
-
-        <section className="sidebar-section">
-          <p>{text.currentCourse}</p>
-          <div className="course-list">
-            {courses.length > 0
-              ? courses.map((item) => (
-                  <button
-                    className={courseId === item.course.id ? "course-item active" : "course-item"}
-                    key={item.course.id}
-                    onClick={() => setCourseId(item.course.id)}
-                    type="button"
-                  >
-                    <span>{getCourseTitle(item.course, locale)}</span>
-                    <small>{item.documents.length} docs</small>
-                  </button>
-                ))
-              : fallbackCourseSummaries.map((item) => (
-                  <button
-                    className={courseId === item.id ? "course-item active" : "course-item"}
-                    key={item.id}
-                    onClick={() => setCourseId(item.id)}
-                    type="button"
-                  >
-                    <span>{courseTitles[locale][item.id]}</span>
-                    <small>{item.documentCount} docs</small>
-                  </button>
-                ))}
-          </div>
-        </section>
-
-        <section className="sidebar-section chat-history-section">
-          <p>{text.sideTitle}</p>
-          <button className="history-item active" type="button">
-            <MessagesSquare aria-hidden="true" />
-            <span>{text.seed.user}</span>
-          </button>
-          <button className="history-item" type="button">
-            <ShieldCheck aria-hidden="true" />
-            <span>{text.headers.assistant.body}</span>
-          </button>
-        </section>
-
-        <section className="sidebar-section">
-          <p>{text.governance}</p>
-          <div className="panel-shortcuts">
-            {(Object.keys(text.panels) as WorkspacePanel[]).map((panel) => {
-              const Icon = panelIcons[panel];
-              const count = panel === "teacher" ? pendingReviewCount : panel === "audit" ? auditEvents.length : selectedCourse?.documents.length;
-
-              return (
-                <button
-                  className={activePanel === panel ? "panel-shortcut active" : "panel-shortcut"}
-                  key={panel}
-                  onClick={() => togglePanel(panel)}
-                  type="button"
-                >
-                  <Icon aria-hidden="true" />
-                  <span>{text.panels[panel]}</span>
-                  <small>{count ?? 0}</small>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <div className="sidebar-controls">
-          <div className="role-switcher" aria-label={text.nav.role}>
-            {(["student", "teacher", "admin"] as CourseRole[]).map((item) => (
-              <button className={role === item ? "role-tab active" : "role-tab"} key={item} onClick={() => updateRole(item)} type="button">
-                {text.roles[item]}
-              </button>
-            ))}
-          </div>
-
-          <div className="locale-switcher" aria-label={text.nav.language}>
-            <Languages aria-hidden="true" />
-            {locales.map((item) => (
-              <button className={locale === item ? "locale-tab active" : "locale-tab"} key={item} onClick={() => updateLocale(item)} type="button">
-                {item === "zh-CN" ? "中文" : "English"}
-              </button>
-            ))}
-          </div>
-        </div>
-      </aside>
+      <CourseChatSidebar
+        activePanel={activePanel}
+        auditEventCount={auditEvents.length}
+        courseId={courseId}
+        courseTitles={courseTitles}
+        courses={courses}
+        fallbackCourseSummaries={fallbackCourseSummaries}
+        getCourseTitle={getCourseTitle}
+        locale={locale}
+        locales={locales}
+        pendingReviewCount={pendingReviewCount}
+        role={role}
+        selectedDocumentCount={selectedCourse?.documents.length ?? 0}
+        setCourseId={setCourseId}
+        startNewQuestion={startNewQuestion}
+        text={text}
+        togglePanel={togglePanel}
+        updateLocale={updateLocale}
+        updateRole={updateRole}
+      />
 
       <main className={activePanel ? "chat-main panel-open" : "chat-main"}>
         <header className="chat-topbar">
