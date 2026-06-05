@@ -5,6 +5,11 @@ import type {
   AuditEvent,
   AuditEventListResponse,
   AnswerResponse,
+  ConversationDetailResponse,
+  ConversationListResponse,
+  ConversationLogEntry,
+  ConversationMessage,
+  ConversationSummary,
   CourseDocument,
   CourseDocumentCreateRequest,
   CourseDocumentCreateResponse,
@@ -48,6 +53,7 @@ const copy = {
     currentCourse: "课程空间",
     providerPath: "Next.js API -> RAG Gateway -> Model Gateway",
     sideTitle: "会话",
+    noChats: "暂无会话，先问一个课程问题。",
     governance: "治理链路",
     closePanel: "关闭面板",
     openPanel: "打开课程面板",
@@ -188,6 +194,7 @@ const copy = {
     currentCourse: "Course space",
     providerPath: "Next.js API -> RAG Gateway -> Model Gateway",
     sideTitle: "Chats",
+    noChats: "No conversations yet. Ask a course question first.",
     governance: "Governance path",
     closePanel: "Close panel",
     openPanel: "Open course panel",
@@ -328,6 +335,7 @@ const copy = {
   currentCourse: string;
   providerPath: string;
   sideTitle: string;
+  noChats: string;
   governance: string;
   closePanel: string;
   openPanel: string;
@@ -391,6 +399,17 @@ function getDocumentTitle(documentId: string, fallback: string, locale: AppLocal
   return documentTitles[locale][documentId] ?? fallback;
 }
 
+function toChatMessages(messages: ConversationMessage[], locale: AppLocale): ChatMessage[] {
+  return messages
+    .filter((message) => message.role !== "system")
+    .map((message) => ({
+      id: message.id,
+      kind: message.role === "assistant" ? "assistant" : "user",
+      text: message.content,
+      sources: message.citations?.map((citation) => getDocumentTitle(citation.documentId, citation.title, locale)),
+    }));
+}
+
 export default function CourseChatClient() {
   const [locale, setLocale] = useState<AppLocale>("zh-CN");
   const text = copy[locale];
@@ -401,6 +420,9 @@ export default function CourseChatClient() {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastResponse, setLastResponse] = useState<AnswerResponse | null>(null);
+  const [activeConversation, setActiveConversation] = useState<ConversationLogEntry | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [conversationSummaries, setConversationSummaries] = useState<ConversationSummary[]>([]);
   const [reviewItems, setReviewItems] = useState<TeacherReviewQueueItem[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -415,7 +437,7 @@ export default function CourseChatClient() {
     () => courses.find((item) => item.course.id === courseId) ?? courses[0],
     [courseId, courses],
   );
-  const visibleCitations = lastResponse?.citations ?? [];
+  const visibleCitations = lastResponse?.citations ?? activeConversation?.citations ?? [];
   const pendingReviewCount = reviewItems.length;
   const selectedCourseTitle = getCourseTitle(selectedCourse?.course, locale);
 
@@ -423,20 +445,23 @@ export default function CourseChatClient() {
     let mounted = true;
 
     async function loadInitialData() {
-      const [courseResponse, reviewResponse, auditResponse] = await Promise.all([
+      const [courseResponse, reviewResponse, auditResponse, conversationResponse] = await Promise.all([
         fetch("/api/courses"),
         fetch("/api/teacher/reviews"),
         fetch("/api/audit/events"),
+        fetch("/api/conversations"),
       ]);
       const courseData = (await courseResponse.json()) as { courses: CourseSnapshot[] };
       const reviewData = (await reviewResponse.json()) as TeacherReviewQueueResponse;
       const auditData = (await auditResponse.json()) as AuditEventListResponse;
+      const conversationData = (await conversationResponse.json()) as ConversationListResponse;
 
       if (mounted) {
         setCourses(courseData.courses);
         setCourseId(courseData.courses[0]?.course.id ?? "ai-101");
         setReviewItems(reviewData.items);
         setAuditEvents(auditData.items);
+        setConversationSummaries(conversationData.items);
       }
     }
 
@@ -463,6 +488,12 @@ export default function CourseChatClient() {
     setAuditEvents(data.items);
   }
 
+  async function refreshConversations() {
+    const response = await fetch("/api/conversations");
+    const data = (await response.json()) as ConversationListResponse;
+    setConversationSummaries(data.items);
+  }
+
   function updateRole(nextRole: CourseRole) {
     setRole(nextRole);
   }
@@ -472,6 +503,8 @@ export default function CourseChatClient() {
     setPrompt("");
     setMessages([]);
     setLastResponse(null);
+    setActiveConversation(null);
+    setActiveConversationId(null);
     setDocumentNotice(null);
     setError(null);
   }
@@ -480,6 +513,8 @@ export default function CourseChatClient() {
     setPrompt("");
     setMessages([]);
     setLastResponse(null);
+    setActiveConversation(null);
+    setActiveConversationId(null);
     setError(null);
     setActivePanel(null);
   }
@@ -513,6 +548,8 @@ export default function CourseChatClient() {
       }
 
       setLastResponse(data);
+      setActiveConversation(null);
+      setActiveConversationId(data.conversationId);
       setMessages((current) => [
         ...current,
         {
@@ -523,8 +560,36 @@ export default function CourseChatClient() {
         },
       ]);
       setPrompt("");
+      await refreshConversations();
       await refreshReviewQueue();
       await refreshAuditEvents();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : text.assistant.requestFailed);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function loadConversation(conversationId: string) {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}`);
+      const data = (await response.json()) as ConversationDetailResponse | { error: string };
+
+      if (!response.ok || "error" in data) {
+        throw new Error("error" in data ? data.error : text.assistant.requestFailed);
+      }
+
+      setActiveConversation(data.item);
+      setActiveConversationId(data.item.conversationId);
+      setCourseId(data.item.courseId);
+      setRole(data.item.role);
+      setPrompt("");
+      setLastResponse(null);
+      setMessages(toChatMessages(data.item.messages, locale));
+      setActivePanel(null);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : text.assistant.requestFailed);
     } finally {
@@ -597,7 +662,9 @@ export default function CourseChatClient() {
     <div className="chat-app">
       <CourseChatSidebar
         activePanel={activePanel}
+        activeConversationId={activeConversationId}
         auditEventCount={auditEvents.length}
+        conversationSummaries={conversationSummaries}
         courseId={courseId}
         courseTitles={courseTitles}
         courses={courses}
@@ -609,6 +676,7 @@ export default function CourseChatClient() {
         role={role}
         selectedDocumentCount={selectedCourse?.documents.length ?? 0}
         setCourseId={setCourseId}
+        loadConversation={loadConversation}
         startNewQuestion={startNewQuestion}
         text={text}
         togglePanel={togglePanel}

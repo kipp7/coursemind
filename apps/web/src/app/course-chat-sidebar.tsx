@@ -1,7 +1,7 @@
 "use client";
 
-import type { AppLocale, CourseRole, CourseSnapshot } from "@coursemind/contracts";
-import { BarChart3, Languages, Library, MessagesSquare, ShieldCheck, SlidersHorizontal, SquarePen } from "lucide-react";
+import type { AppLocale, ConversationSummary, CourseRole, CourseSnapshot } from "@coursemind/contracts";
+import { BarChart3, Languages, Library, MessagesSquare, SlidersHorizontal, SquarePen } from "lucide-react";
 import type { WorkspacePanel } from "./course-chat-types";
 
 type SidebarText = {
@@ -9,6 +9,7 @@ type SidebarText = {
   newChat: string;
   currentCourse: string;
   sideTitle: string;
+  noChats: string;
   governance: string;
   seed: {
     user: string;
@@ -33,7 +34,9 @@ type FallbackCourseSummary = {
 
 type CourseChatSidebarProps = {
   activePanel: WorkspacePanel | null;
+  activeConversationId: string | null;
   auditEventCount: number;
+  conversationSummaries: ConversationSummary[];
   courseId: string;
   courseTitles: Record<AppLocale, Record<string, string>>;
   courses: CourseSnapshot[];
@@ -45,6 +48,7 @@ type CourseChatSidebarProps = {
   role: CourseRole;
   selectedDocumentCount: number;
   setCourseId: (courseId: string) => void;
+  loadConversation: (conversationId: string) => void;
   startNewQuestion: () => void;
   text: SidebarText;
   togglePanel: (panel: WorkspacePanel) => void;
@@ -60,7 +64,9 @@ const panelIcons = {
 
 export function CourseChatSidebar({
   activePanel,
+  activeConversationId,
   auditEventCount,
+  conversationSummaries,
   courseId,
   courseTitles,
   courses,
@@ -72,6 +78,7 @@ export function CourseChatSidebar({
   role,
   selectedDocumentCount,
   setCourseId,
+  loadConversation,
   startNewQuestion,
   text,
   togglePanel,
@@ -124,14 +131,22 @@ export function CourseChatSidebar({
 
       <section className="sidebar-section chat-history-section">
         <p>{text.sideTitle}</p>
-        <button className="history-item active" type="button">
-          <MessagesSquare aria-hidden="true" />
-          <span>{text.seed.user}</span>
-        </button>
-        <button className="history-item" type="button">
-          <ShieldCheck aria-hidden="true" />
-          <span>{text.headers.assistant.body}</span>
-        </button>
+        {conversationSummaries.length > 0 ? (
+          conversationSummaries.map((conversation) => (
+            <button
+              className={activeConversationId === conversation.conversationId ? "history-item active" : "history-item"}
+              key={conversation.conversationId}
+              onClick={() => loadConversation(conversation.conversationId)}
+              type="button"
+            >
+              <MessagesSquare aria-hidden="true" />
+              <span>{conversation.title}</span>
+              <small>{conversation.messageCount}</small>
+            </button>
+          ))
+        ) : (
+          <div className="history-empty">{text.noChats}</div>
+        )}
       </section>
 
       <section className="sidebar-section">

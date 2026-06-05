@@ -39,6 +39,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - Frontend completion status: the main chat surface has been adapted, but the frontend is not yet complete. The route entry is now being separated from the large client component so later work can extract sidebar, conversation, composer, and governance panel components.
 - Frontend component extraction has started: `CourseChatSidebar` now owns the left course/session/governance navigation while `CourseChatClient` keeps application state, API calls, conversation, composer, and governance panel orchestration.
 - Frontend component extraction continued: `CourseChatConversation` now owns the central empty state, message list, loading state, error line, and bottom composer while `CourseChatClient` keeps course, provider, review, audit, and document-ingestion orchestration.
+- The Web sidebar now consumes the persisted conversation history API: `/api/conversations` populates real chat history, and `/api/conversations/[conversationId]` restores a selected conversation into the central chat surface.
 
 ## Constraints
 
@@ -64,7 +65,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 11. Continue extracting frontend components once the ChatGPT-like course chat information architecture stabilizes.
 12. Keep future work committed and pushed in small coherent units.
 13. Evolve the Web MVP toward a Xiaoyu-style school workbench with distinct student Q&A and teacher review/dashboard surfaces.
-14. Wire the Web sidebar to the persisted conversation history API and adapt materials/review/audit panels into production-shaped workflows.
+14. Adapt materials/review/audit panels into production-shaped workflows and continue replacing mock-only UI state with persisted API data.
 
 ## Done Criteria
 
