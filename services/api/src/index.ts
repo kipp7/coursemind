@@ -9,6 +9,8 @@ export {
 export { createRagGateway, RagProviderConfigurationError } from "./rag/provider-registry";
 export { DifyRagGateway } from "./rag/dify-rag-gateway";
 export type { DifyRagGatewayConfig } from "./rag/dify-rag-gateway";
+export { RagFlowRagGateway } from "./rag/ragflow-rag-gateway";
+export type { RagFlowRagGatewayConfig } from "./rag/ragflow-rag-gateway";
 export { conversationRepository, InMemoryConversationRepository } from "./repositories/in-memory-conversation-repository";
 export type { ConversationRepository, SaveAnswerRecordInput } from "./repositories/conversation-repository";
 export { auditEventRepository, InMemoryAuditEventRepository } from "./repositories/in-memory-audit-event-repository";

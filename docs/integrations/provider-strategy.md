@@ -13,7 +13,7 @@ Current behavior:
 - `COURSEMIND_RAG_PROVIDER` defaults to `mock`.
 - `mock` returns demo citations from course documents without external calls.
 - `dify` has a first adapter skeleton and intentionally fails with `503` until Dify API settings are provided.
-- `ragflow` is a reserved provider ID and intentionally fails until its adapter is implemented and configured.
+- `ragflow` has a first adapter skeleton and intentionally fails with `503` until RAGFlow API settings are provided.
 - The Web app should continue calling CourseMind's own API routes, never provider APIs directly.
 
 ### Dify
@@ -59,6 +59,31 @@ Use when:
 - course documents are complex
 - OCR/table parsing matters
 - retrieval quality becomes a visible product risk
+
+Current skeleton:
+
+- Code lives in `services/api/src/rag/ragflow-rag-gateway.ts`.
+- Provider selection uses `COURSEMIND_RAG_PROVIDER=ragflow`.
+- Required runtime settings:
+  - `COURSEMIND_RAGFLOW_API_BASE_URL`
+  - `COURSEMIND_RAGFLOW_API_KEY`
+  - `COURSEMIND_RAGFLOW_CHAT_ID`
+  - optional `COURSEMIND_RAGFLOW_MODEL`
+- The adapter is shaped around RAGFlow's OpenAI-compatible chat completion endpoint:
+
+```text
+POST /api/v1/chats_openai/{chat_id}/chat/completions
+Authorization header uses a server-side bearer credential
+stream: false
+extra_body.reference: true
+extra_body.metadata_condition includes course_id
+```
+
+Do not expose the RAGFlow API key or chat assistant ID to the frontend. Keep them in server runtime configuration only.
+
+The skeleton maps RAGFlow `message.reference.chunks` into CourseMind citations when present. Real RAGFlow integration still needs environment-specific testing with a configured RAGFlow chat assistant and course dataset metadata.
+
+Reference: https://raw.githubusercontent.com/infiniflow/ragflow/main/docs/references/http_api_reference.md
 
 ## Adapter Contract
 

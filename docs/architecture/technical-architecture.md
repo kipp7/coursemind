@@ -107,6 +107,7 @@ The MVP now has a mock persistence boundary in `services/api/src/repositories`:
 - `/api/teacher/reviews/[reviewId]` lets the demo approve, correct, or reject a pending teacher review.
 - `/api/audit/events` exposes the current audit trail for the Web demo.
 - `/api/courses/[courseId]/documents` creates a mocked course material ingestion task and records it in the audit trail.
+- `DifyRagGateway` and `RagFlowRagGateway` now exist as provider adapter skeletons behind the same `RagGateway` interface. They require server-side runtime configuration before real use.
 
 This is not durable database storage. It exists to prove the school review and audit boundary before introducing Prisma/PostgreSQL or another production store.
 

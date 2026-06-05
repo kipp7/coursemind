@@ -20,6 +20,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - A first RAG gateway adapter boundary exists in `services/api/src/rag`; the course-agent use case now depends on `RagGateway` instead of inline retrieval logic.
 - Shared contracts now use Zod schemas, and `/api/agent/answer` validates request and response payloads at runtime.
 - A Dify RAG adapter skeleton exists in `services/api/src/rag/dify-rag-gateway.ts`; it requires server-side Dify environment variables before real use.
+- A RAGFlow adapter skeleton exists in `services/api/src/rag/ragflow-rag-gateway.ts`; it uses the RAGFlow OpenAI-compatible chat completion endpoint and maps returned references into CourseMind citations when configured.
 - A mock conversation/review persistence boundary exists in `services/api/src/repositories`; answer generation now stores user messages, assistant messages, citations, RAG trace, and pending teacher reviews for the running server process.
 - Teacher review actions now exist for approve, correct, and reject through `/api/teacher/reviews/[reviewId]`.
 - A mock audit event boundary now exists in `services/api/src/repositories`; answer generation and teacher review actions record audit events for the running server process.
@@ -52,7 +53,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 2. Establish docs and memory as project-level source of truth.
 3. Keep local Git and GitHub remote in sync.
 4. Test the Dify adapter against a real Dify app and course knowledge base when credentials are available.
-5. Implement the RAGFlow adapter behind the existing RAG gateway interface.
+5. Test the RAGFlow adapter against a real RAGFlow chat assistant and course dataset when credentials are available.
 6. Add validation to future API routes as they are introduced.
 7. Replace the in-memory audit event repository with durable storage when production persistence is introduced.
 8. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.

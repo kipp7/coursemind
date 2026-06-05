@@ -1,6 +1,7 @@
 import { DifyRagGateway, type DifyRagGatewayConfig } from "./dify-rag-gateway";
 import { MockRagGateway } from "./mock-rag-gateway";
 import type { RagGateway, RagProviderId } from "./rag-gateway";
+import { RagFlowRagGateway, type RagFlowRagGatewayConfig } from "./ragflow-rag-gateway";
 
 export class RagProviderConfigurationError extends Error {
   constructor(provider: RagProviderId) {
@@ -16,6 +17,10 @@ export function createRagGateway(provider: RagProviderId = getConfiguredRagProvi
 
   if (provider === "dify") {
     return new DifyRagGateway(getDifyConfig());
+  }
+
+  if (provider === "ragflow") {
+    return new RagFlowRagGateway(getRagFlowConfig());
   }
 
   throw new RagProviderConfigurationError(provider);
@@ -47,5 +52,22 @@ function getDifyConfig(): DifyRagGatewayConfig {
     apiBaseUrl,
     apiKey,
     userPrefix: process.env.COURSEMIND_DIFY_USER_PREFIX,
+  };
+}
+
+function getRagFlowConfig(): RagFlowRagGatewayConfig {
+  const apiBaseUrl = process.env.COURSEMIND_RAGFLOW_API_BASE_URL;
+  const apiKey = process.env.COURSEMIND_RAGFLOW_API_KEY;
+  const chatId = process.env.COURSEMIND_RAGFLOW_CHAT_ID;
+
+  if (!apiBaseUrl || !apiKey || !chatId) {
+    throw new RagProviderConfigurationError("ragflow");
+  }
+
+  return {
+    apiBaseUrl,
+    apiKey,
+    chatId,
+    model: process.env.COURSEMIND_RAGFLOW_MODEL,
   };
 }
