@@ -129,6 +129,31 @@ export const conversationLogEntrySchema = z.object({
 });
 export type ConversationLogEntry = z.infer<typeof conversationLogEntrySchema>;
 
+export const conversationSummarySchema = z.object({
+  conversationId: z.string().min(1),
+  courseId: z.string().min(1),
+  role: courseRoleSchema,
+  title: z.string().min(1),
+  lastMessagePreview: z.string().min(1),
+  messageCount: z.number().int().nonnegative(),
+  reviewStatus: teacherReviewStatusSchema,
+  ragProvider: ragTraceSchema.shape.provider,
+  modelProvider: modelTraceSchema.shape.provider,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+export type ConversationSummary = z.infer<typeof conversationSummarySchema>;
+
+export const conversationListResponseSchema = z.object({
+  items: z.array(conversationSummarySchema),
+});
+export type ConversationListResponse = z.infer<typeof conversationListResponseSchema>;
+
+export const conversationDetailResponseSchema = z.object({
+  item: conversationLogEntrySchema,
+});
+export type ConversationDetailResponse = z.infer<typeof conversationDetailResponseSchema>;
+
 export const teacherReviewQueueItemSchema = z.object({
   review: teacherReviewSchema,
   course: courseSchema,

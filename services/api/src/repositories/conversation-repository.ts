@@ -3,6 +3,7 @@ import type {
   Citation,
   ConversationLogEntry,
   ConversationMessage,
+  ConversationSummary,
   Course,
   ModelTrace,
   RagTrace,
@@ -24,6 +25,8 @@ export type SaveAnswerRecordInput = {
 
 export interface ConversationRepository {
   saveAnswerRecord(input: SaveAnswerRecordInput): Promise<ConversationLogEntry>;
+  listConversations(): Promise<ConversationSummary[]>;
+  getConversation(conversationId: string): Promise<ConversationLogEntry>;
   listTeacherReviewQueue(): Promise<TeacherReviewQueueItem[]>;
   updateTeacherReview(reviewId: string, action: TeacherReviewAction): Promise<TeacherReviewQueueItem>;
 }

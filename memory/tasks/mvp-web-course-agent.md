@@ -23,6 +23,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - A RAGFlow adapter skeleton exists in `services/api/src/rag/ragflow-rag-gateway.ts`; it uses the RAGFlow OpenAI-compatible chat completion endpoint and maps returned references into CourseMind citations when configured.
 - A model gateway boundary exists in `services/api/src/model`; the MVP defaults to `MockModelGateway`, and an OpenAI-compatible adapter skeleton can support Qwen, DeepSeek, OpenAI-compatible cloud APIs, vLLM, or Ollama through server-side configuration.
 - A mock conversation/review persistence boundary exists in `services/api/src/repositories`; answer generation now stores user messages, assistant messages, citations, RAG trace, and pending teacher reviews for the running server process.
+- Conversation history API boundaries now exist: `/api/conversations` lists persisted conversation summaries, and `/api/conversations/[conversationId]` returns a full conversation log.
 - Teacher review actions now exist for approve, correct, and reject through `/api/teacher/reviews/[reviewId]`.
 - A mock audit event boundary now exists in `services/api/src/repositories`; answer generation and teacher review actions record audit events for the running server process.
 - `/api/audit/events` exposes the current audit trail, and the Web demo shows recent audit events in the governance panel.
@@ -63,7 +64,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 11. Continue extracting frontend components once the ChatGPT-like course chat information architecture stabilizes.
 12. Keep future work committed and pushed in small coherent units.
 13. Evolve the Web MVP toward a Xiaoyu-style school workbench with distinct student Q&A and teacher review/dashboard surfaces.
-14. Replace mock chat history with persisted conversation data and adapt materials/review/audit panels into production-shaped workflows.
+14. Wire the Web sidebar to the persisted conversation history API and adapt materials/review/audit panels into production-shaped workflows.
 
 ## Done Criteria
 

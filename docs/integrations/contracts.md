@@ -16,6 +16,9 @@ Current runtime validation:
 Conversation and review DTOs now include:
 
 - `ConversationLogEntry`
+- `ConversationSummary`
+- `ConversationListResponse`
+- `ConversationDetailResponse`
 - `TeacherReviewQueueItem`
 - `TeacherReviewQueueResponse`
 - `TeacherReviewAction`
@@ -85,6 +88,24 @@ type TeacherReview = {
   correction?: string;
   rubricNotes?: string;
   createdAt: string;
+};
+```
+
+## Conversation Summary
+
+```ts
+type ConversationSummary = {
+  conversationId: string;
+  courseId: string;
+  role: "student" | "teacher" | "admin";
+  title: string;
+  lastMessagePreview: string;
+  messageCount: number;
+  reviewStatus: "pending" | "approved" | "corrected" | "rejected";
+  ragProvider: "mock" | "dify" | "ragflow" | "custom";
+  modelProvider: "mock" | "openai-compatible" | "custom";
+  createdAt: string;
+  updatedAt: string;
 };
 ```
 

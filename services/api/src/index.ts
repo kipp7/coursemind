@@ -1,8 +1,10 @@
 export {
   answerCourseQuestion,
   createCourseDocument,
+  getConversation,
   getCourseSnapshots,
   listAuditEvents,
+  listConversations,
   listTeacherReviewQueue,
   updateTeacherReview,
 } from "./use-cases/course-agent";

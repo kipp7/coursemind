@@ -1,4 +1,10 @@
-import type { ConversationLogEntry, TeacherReviewAction, TeacherReviewQueueItem } from "@coursemind/contracts";
+import type {
+  ConversationLogEntry,
+  ConversationMessage,
+  ConversationSummary,
+  TeacherReviewAction,
+  TeacherReviewQueueItem,
+} from "@coursemind/contracts";
 import type { ConversationRepository, SaveAnswerRecordInput } from "./conversation-repository";
 
 type CourseMindConversationGlobal = typeof globalThis & {
@@ -41,6 +47,22 @@ export class InMemoryConversationRepository implements ConversationRepository {
     return entry;
   }
 
+  async listConversations() {
+    return Array.from(conversationLog.values()).map(toConversationSummary).sort((left, right) =>
+      right.updatedAt.localeCompare(left.updatedAt),
+    );
+  }
+
+  async getConversation(conversationId: string) {
+    const entry = conversationLog.get(conversationId);
+
+    if (!entry) {
+      throw new Error(`Unknown conversation: ${conversationId}`);
+    }
+
+    return entry;
+  }
+
   async listTeacherReviewQueue() {
     return Array.from(reviewQueue.values()).sort((left, right) =>
       right.review.createdAt.localeCompare(left.review.createdAt),
@@ -78,6 +100,32 @@ export class InMemoryConversationRepository implements ConversationRepository {
 
     return updatedItem;
   }
+}
+
+function toConversationSummary(entry: ConversationLogEntry): ConversationSummary {
+  const firstUserMessage = entry.messages.find((message) => message.role !== "assistant" && message.role !== "system");
+  const lastMessage = entry.messages.at(-1);
+
+  return {
+    conversationId: entry.conversationId,
+    courseId: entry.courseId,
+    role: entry.role,
+    title: toPreview(firstUserMessage ?? lastMessage),
+    lastMessagePreview: toPreview(lastMessage),
+    messageCount: entry.messages.length,
+    reviewStatus: entry.review.status,
+    ragProvider: entry.ragTrace.provider,
+    modelProvider: entry.modelTrace.provider,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+  };
+}
+
+function toPreview(message: ConversationMessage | undefined) {
+  const fallback = "Untitled conversation";
+  const content = message?.content.trim() || fallback;
+
+  return content.length > 80 ? `${content.slice(0, 77)}...` : content;
 }
 
 export const conversationRepository = new InMemoryConversationRepository();

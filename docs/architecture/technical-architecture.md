@@ -101,6 +101,8 @@ The MVP now has a mock persistence boundary in `services/api/src/repositories`:
 
 - `ConversationRepository` defines the application-facing storage interface.
 - `InMemoryConversationRepository` stores conversation messages, citations, RAG traces, and teacher review queue items for the running server process.
+- `/api/conversations` exposes persisted conversation summaries for the Web demo.
+- `/api/conversations/[conversationId]` exposes a full persisted conversation log for the Web demo.
 - `AuditEventRepository` defines the application-facing audit log interface.
 - `InMemoryAuditEventRepository` stores answer-created and teacher-review-updated events for the running server process.
 - `/api/teacher/reviews` exposes the current teacher review queue for the Web demo.

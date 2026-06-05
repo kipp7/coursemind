@@ -249,6 +249,14 @@ export async function listTeacherReviewQueue(): Promise<TeacherReviewQueueItem[]
   return conversationRepository.listTeacherReviewQueue();
 }
 
+export async function listConversations() {
+  return conversationRepository.listConversations();
+}
+
+export async function getConversation(conversationId: string) {
+  return conversationRepository.getConversation(conversationId);
+}
+
 export async function updateTeacherReview(reviewId: string, action: TeacherReviewAction) {
   const item = await conversationRepository.updateTeacherReview(reviewId, action);
 
