@@ -21,6 +21,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - Shared contracts now use Zod schemas, and `/api/agent/answer` validates request and response payloads at runtime.
 - A Dify RAG adapter skeleton exists in `services/api/src/rag/dify-rag-gateway.ts`; it requires server-side Dify environment variables before real use.
 - A RAGFlow adapter skeleton exists in `services/api/src/rag/ragflow-rag-gateway.ts`; it uses the RAGFlow OpenAI-compatible chat completion endpoint and maps returned references into CourseMind citations when configured.
+- A model gateway boundary exists in `services/api/src/model`; the MVP defaults to `MockModelGateway`, and an OpenAI-compatible adapter skeleton can support Qwen, DeepSeek, OpenAI-compatible cloud APIs, vLLM, or Ollama through server-side configuration.
 - A mock conversation/review persistence boundary exists in `services/api/src/repositories`; answer generation now stores user messages, assistant messages, citations, RAG trace, and pending teacher reviews for the running server process.
 - Teacher review actions now exist for approve, correct, and reject through `/api/teacher/reviews/[reviewId]`.
 - A mock audit event boundary now exists in `services/api/src/repositories`; answer generation and teacher review actions record audit events for the running server process.

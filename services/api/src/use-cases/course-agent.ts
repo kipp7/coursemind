@@ -3,7 +3,6 @@ import type {
   AnswerRequest,
   AnswerResponse,
   AppLocale,
-  Citation,
   CourseDocument,
   CourseDocumentCreateRequest,
   CourseDocumentCreateResponse,
@@ -13,6 +12,7 @@ import type {
   TeacherReviewAction,
   TeacherReviewQueueItem,
 } from "@coursemind/contracts";
+import { createModelGateway } from "../model/provider-registry";
 import { createRagGateway } from "../rag/provider-registry";
 import { auditEventRepository } from "../repositories/in-memory-audit-event-repository";
 import { conversationRepository } from "../repositories/in-memory-conversation-repository";
@@ -162,8 +162,15 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     documents: snapshot.documents,
   });
   const citations = retrieval.citations;
-  const answer = composeAnswer(request, snapshot, citations);
   const locale = request.locale;
+  const guardrails = getGuardrails(locale);
+  const modelGateway = createModelGateway();
+  const generation = await modelGateway.generateAnswer({
+    request,
+    courseSnapshot: snapshot,
+    citations,
+    guardrails,
+  });
   const now = new Date().toISOString();
   const conversationId = `conv-${request.courseId}-demo`;
   const userMessageId = `msg-user-${Date.now()}`;
@@ -179,7 +186,7 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     id: messageId,
     conversationId,
     role: "assistant",
-    content: answer,
+    content: generation.content,
     citations,
     createdAt: now,
   };
@@ -201,6 +208,7 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     answerMessage,
     citations,
     ragTrace: retrieval.trace,
+    modelTrace: generation.trace,
     review,
   });
   await auditEventRepository.recordEvent({
@@ -217,9 +225,12 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
         : `Course agent answer created for ${snapshot.course.title}.`,
     metadata: {
       citationCount: citations.length,
-      provider: retrieval.trace.provider,
+      ragProvider: retrieval.trace.provider,
+      modelProvider: generation.trace.provider,
+      model: generation.trace.model,
       reviewId: review.id,
       retrievedDocumentIds: retrieval.trace.retrievedDocumentIds,
+      tokenUsage: generation.trace.tokenUsage,
     },
   });
 
@@ -228,8 +239,9 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     answerMessage,
     citations,
     ragTrace: retrieval.trace,
+    modelTrace: generation.trace,
     review,
-    guardrails: getGuardrails(locale),
+    guardrails,
   };
 }
 
@@ -265,34 +277,6 @@ export async function listAuditEvents(): Promise<AuditEvent[]> {
   return auditEventRepository.listEvents();
 }
 
-function composeAnswer(request: AnswerRequest, snapshot: CourseSnapshot, citations: Citation[]) {
-  const citationText = citations
-    .map((citation, index) => `[${index + 1}] ${getCitationTitle(citation, request.locale)}`)
-    .join(request.locale === "zh-CN" ? "、" : ", ");
-
-  if (request.role === "teacher") {
-    if (request.locale === "zh-CN") {
-      return `这条回答应该进入教师审核队列。根据 ${citationText}，智能体需要先解释课程概念，再把引用自课件的内容和教师补充建议分开呈现。${getCourseTitle(snapshot, request.locale)} 当前还有 ${snapshot.pendingReviewCount} 条待审核记录。`;
-    }
-
-    return `This should enter the teacher review queue. Based on ${citationText}, the answer should explain the course concept first, then separate cited lecture material from teacher additions. ${snapshot.course.title} currently has ${snapshot.pendingReviewCount} pending review items.`;
-  }
-
-  if (request.role === "admin") {
-    if (request.locale === "zh-CN") {
-      return `从管理员视角看，这次回答已经记录了课程、角色、引用、护栏和审核状态。mock RAG 适配器检索到了 ${citations.length} 条证据。后续可以把 provider 切换到 Dify 或 RAGFlow，同时不让 Web 前端接触模型密钥。`;
-    }
-
-    return `From the admin view, this answer records course, role, citations, guardrails, and review status. The mock RAG adapter retrieved ${citations.length} evidence items. Later we can swap the provider to Dify or RAGFlow without exposing model credentials to the Web client.`;
-  }
-
-  if (request.locale === "zh-CN") {
-    return `对 ${getCourseTitle(snapshot, request.locale)} 来说，MVP 阶段应该优先使用 RAG：先从当前课件、实验说明和教师 FAQ 中检索课程上下文，再由模型组织回答。微调应该等到学校积累了教师确认过的问答、评分标准和稳定规范之后再做。这条回答基于 ${citationText}，因此可以被教师审核和追踪，而不是只能盲目信任。`;
-  }
-
-  return `RAG is the right first step for ${snapshot.course.title}: it retrieves current lecture notes, labs, and teacher FAQs before the model writes the answer. Fine-tuning should wait until the school has teacher-approved answers, rubrics, and stable policy examples. This response is grounded in ${citationText}, so it can be audited instead of trusted blindly.`;
-}
-
 function getGuardrails(locale: AppLocale) {
   if (locale === "zh-CN") {
     return [
@@ -315,20 +299,4 @@ function getCourseTitle(snapshot: CourseSnapshot, locale: AppLocale) {
   }
 
   return snapshot.course.title;
-}
-
-function getCitationTitle(citation: Citation, locale: AppLocale) {
-  if (locale !== "zh-CN") {
-    return citation.title;
-  }
-
-  const titleMap: Record<string, string> = {
-    "ai-syllabus": "课程大纲",
-    "ai-rag-lecture": "第 4 讲：RAG 与课程问答",
-    "ai-review-rubric": "教师审核标准草案",
-    "data-tree-notes": "树与二叉树讲义",
-    "data-lab-queue": "实验 2：栈和队列",
-  };
-
-  return titleMap[citation.documentId] ?? citation.title;
 }

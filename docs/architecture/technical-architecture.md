@@ -108,6 +108,7 @@ The MVP now has a mock persistence boundary in `services/api/src/repositories`:
 - `/api/audit/events` exposes the current audit trail for the Web demo.
 - `/api/courses/[courseId]/documents` creates a mocked course material ingestion task and records it in the audit trail.
 - `DifyRagGateway` and `RagFlowRagGateway` now exist as provider adapter skeletons behind the same `RagGateway` interface. They require server-side runtime configuration before real use.
+- `MockModelGateway` and `OpenAiCompatibleModelGateway` now exist behind the same `ModelGateway` interface. Answer responses and stored conversation logs now include `modelTrace` alongside `ragTrace`.
 
 This is not durable database storage. It exists to prove the school review and audit boundary before introducing Prisma/PostgreSQL or another production store.
 

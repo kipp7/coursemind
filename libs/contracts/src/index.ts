@@ -82,6 +82,20 @@ export const ragTraceSchema = z.object({
 });
 export type RagTrace = z.infer<typeof ragTraceSchema>;
 
+export const modelTraceSchema = z.object({
+  provider: z.enum(["mock", "openai-compatible", "custom"]),
+  model: z.string().min(1),
+  promptPolicy: z.enum(["student_course_answer", "teacher_review_draft", "admin_audit_summary"]),
+  tokenUsage: z
+    .object({
+      promptTokens: z.number().int().nonnegative().optional(),
+      completionTokens: z.number().int().nonnegative().optional(),
+      totalTokens: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
+});
+export type ModelTrace = z.infer<typeof modelTraceSchema>;
+
 export const answerRequestSchema = z.object({
   courseId: z.string().min(1),
   role: courseRoleSchema,
@@ -95,6 +109,7 @@ export const answerResponseSchema = z.object({
   answerMessage: conversationMessageSchema,
   citations: z.array(citationSchema),
   ragTrace: ragTraceSchema,
+  modelTrace: modelTraceSchema,
   review: teacherReviewSchema,
   guardrails: z.array(z.string().min(1)),
 });
@@ -107,6 +122,7 @@ export const conversationLogEntrySchema = z.object({
   messages: z.array(conversationMessageSchema),
   citations: z.array(citationSchema),
   ragTrace: ragTraceSchema,
+  modelTrace: modelTraceSchema,
   review: teacherReviewSchema,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -120,6 +136,7 @@ export const teacherReviewQueueItemSchema = z.object({
   answerMessage: conversationMessageSchema,
   citations: z.array(citationSchema),
   ragTrace: ragTraceSchema,
+  modelTrace: modelTraceSchema,
 });
 export type TeacherReviewQueueItem = z.infer<typeof teacherReviewQueueItemSchema>;
 

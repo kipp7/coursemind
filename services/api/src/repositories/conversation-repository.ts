@@ -4,6 +4,7 @@ import type {
   ConversationLogEntry,
   ConversationMessage,
   Course,
+  ModelTrace,
   RagTrace,
   TeacherReview,
   TeacherReviewAction,
@@ -17,6 +18,7 @@ export type SaveAnswerRecordInput = {
   answerMessage: ConversationMessage;
   citations: Citation[];
   ragTrace: RagTrace;
+  modelTrace: ModelTrace;
   review: TeacherReview;
 };
 

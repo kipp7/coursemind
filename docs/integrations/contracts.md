@@ -88,6 +88,21 @@ type TeacherReview = {
 };
 ```
 
+## Model Trace
+
+```ts
+type ModelTrace = {
+  provider: "mock" | "openai-compatible" | "custom";
+  model: string;
+  promptPolicy: "student_course_answer" | "teacher_review_draft" | "admin_audit_summary";
+  tokenUsage?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+  };
+};
+```
+
 ## Design Rule
 
 Frontend code should consume these shapes through a shared contracts package later. It should not invent provider-specific response shapes directly in UI components.

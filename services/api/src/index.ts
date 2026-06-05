@@ -6,6 +6,11 @@ export {
   listTeacherReviewQueue,
   updateTeacherReview,
 } from "./use-cases/course-agent";
+export { createModelGateway, ModelProviderConfigurationError } from "./model/provider-registry";
+export { MockModelGateway } from "./model/mock-model-gateway";
+export { OpenAiCompatibleModelGateway } from "./model/openai-compatible-model-gateway";
+export type { OpenAiCompatibleModelGatewayConfig } from "./model/openai-compatible-model-gateway";
+export type { ModelGateway, ModelGenerationRequest, ModelGenerationResult } from "./model/model-gateway";
 export { createRagGateway, RagProviderConfigurationError } from "./rag/provider-registry";
 export { DifyRagGateway } from "./rag/dify-rag-gateway";
 export type { DifyRagGatewayConfig } from "./rag/dify-rag-gateway";

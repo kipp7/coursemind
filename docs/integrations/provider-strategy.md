@@ -99,7 +99,37 @@ Provider adapters may use different external APIs, but they must return CourseMi
 
 ## Model Providers
 
-Expose model calls through a model gateway. Keep the app compatible with OpenAI-style chat completion semantics when possible.
+CourseMind now has a first code-level model gateway boundary in `services/api/src/model`.
+
+Current behavior:
+
+- `COURSEMIND_MODEL_PROVIDER` defaults to `mock`.
+- `mock` preserves the deterministic MVP demo answer behavior without external model calls.
+- `openai-compatible` has a first adapter skeleton and intentionally fails with `503` until model runtime settings are provided.
+- The Web app should continue calling CourseMind's own API routes, never model provider APIs directly.
+
+### OpenAI-Compatible Gateway
+
+Use OpenAI-style chat completion semantics where possible so provider replacement stays boring.
+
+Current skeleton:
+
+- Code lives in `services/api/src/model/openai-compatible-model-gateway.ts`.
+- Provider selection uses `COURSEMIND_MODEL_PROVIDER=openai-compatible`.
+- Required runtime settings:
+  - `COURSEMIND_MODEL_API_BASE_URL`
+  - `COURSEMIND_MODEL_APP_AUTH`
+  - `COURSEMIND_MODEL_NAME`
+- The adapter is shaped around OpenAI-compatible chat completion endpoints:
+
+```text
+POST /chat/completions
+Authorization header uses a server-side bearer credential
+messages: system policy + course question and citations
+temperature: 0.2
+```
+
+Do not expose model credentials to the frontend. Keep them in server runtime configuration only.
 
 Candidate providers:
 

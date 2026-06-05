@@ -21,6 +21,7 @@ export class InMemoryConversationRepository implements ConversationRepository {
       messages: [...(existing?.messages ?? []), input.userMessage, input.answerMessage],
       citations: input.citations,
       ragTrace: input.ragTrace,
+      modelTrace: input.modelTrace,
       review: input.review,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
@@ -34,6 +35,7 @@ export class InMemoryConversationRepository implements ConversationRepository {
       answerMessage: input.answerMessage,
       citations: input.citations,
       ragTrace: input.ragTrace,
+      modelTrace: input.modelTrace,
     });
 
     return entry;

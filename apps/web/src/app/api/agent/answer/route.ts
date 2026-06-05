@@ -1,4 +1,4 @@
-import { answerCourseQuestion, RagProviderConfigurationError } from "@coursemind/api";
+import { answerCourseQuestion, ModelProviderConfigurationError, RagProviderConfigurationError } from "@coursemind/api";
 import { answerRequestSchema, answerResponseSchema } from "@coursemind/contracts";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     const message = error instanceof Error ? error.message : "Unable to answer question";
-    const status = error instanceof RagProviderConfigurationError ? 503 : 404;
+    const status = error instanceof RagProviderConfigurationError || error instanceof ModelProviderConfigurationError ? 503 : 404;
     return NextResponse.json({ error: message }, { status });
   }
 }
