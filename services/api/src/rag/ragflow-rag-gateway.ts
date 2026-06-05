@@ -3,7 +3,7 @@ import { getRetrievalPolicy, getVisibleDocuments, type RagGateway, type RagRetri
 
 export type RagFlowRagGatewayConfig = {
   apiBaseUrl: string;
-  apiKey: string;
+  appAuth: string;
   chatId: string;
   model?: string;
 };
@@ -46,7 +46,7 @@ export class RagFlowRagGateway implements RagGateway {
       {
         method: "POST",
         headers: {
-          Authorization: ["Bearer", this.config.apiKey].join(" "),
+          Authorization: ["Bearer", this.config.appAuth].join(" "),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

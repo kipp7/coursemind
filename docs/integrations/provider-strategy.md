@@ -66,7 +66,7 @@ Current skeleton:
 - Provider selection uses `COURSEMIND_RAG_PROVIDER=ragflow`.
 - Required runtime settings:
   - `COURSEMIND_RAGFLOW_API_BASE_URL`
-  - `COURSEMIND_RAGFLOW_API_KEY`
+  - `COURSEMIND_RAGFLOW_APP_AUTH`
   - `COURSEMIND_RAGFLOW_CHAT_ID`
   - optional `COURSEMIND_RAGFLOW_MODEL`
 - The adapter is shaped around RAGFlow's OpenAI-compatible chat completion endpoint:

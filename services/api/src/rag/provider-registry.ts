@@ -57,16 +57,16 @@ function getDifyConfig(): DifyRagGatewayConfig {
 
 function getRagFlowConfig(): RagFlowRagGatewayConfig {
   const apiBaseUrl = process.env.COURSEMIND_RAGFLOW_API_BASE_URL;
-  const apiKey = process.env.COURSEMIND_RAGFLOW_API_KEY;
+  const appAuth = process.env.COURSEMIND_RAGFLOW_APP_AUTH;
   const chatId = process.env.COURSEMIND_RAGFLOW_CHAT_ID;
 
-  if (!apiBaseUrl || !apiKey || !chatId) {
+  if (!apiBaseUrl || !appAuth || !chatId) {
     throw new RagProviderConfigurationError("ragflow");
   }
 
   return {
     apiBaseUrl,
-    apiKey,
+    appAuth,
     chatId,
     model: process.env.COURSEMIND_RAGFLOW_MODEL,
   };
