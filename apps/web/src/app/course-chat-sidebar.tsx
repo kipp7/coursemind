@@ -1,8 +1,9 @@
 "use client";
 
 import type { AppLocale, ConversationSummary, CourseRole, CourseSnapshot } from "@coursemind/contracts";
-import { BarChart3, Languages, Library, MessagesSquare, SlidersHorizontal, SquarePen } from "lucide-react";
+import { BarChart3, Languages, Library, MessagesSquare, ShieldCheck, SlidersHorizontal, SquarePen } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { WorkspacePanel } from "./course-chat-types";
 
 type SidebarText = {
@@ -98,6 +99,8 @@ export function CourseChatSidebar({
   updateLocale,
   updateRole,
 }: CourseChatSidebarProps) {
+  const pathname = usePathname();
+
   return (
     <aside className="chat-sidebar">
       <div className="brand">
@@ -165,6 +168,11 @@ export function CourseChatSidebar({
       <section className="sidebar-section">
         <p>{text.governance}</p>
         <div className="panel-shortcuts">
+          <Link className={pathname === "/governance" ? "panel-shortcut active" : "panel-shortcut"} href="/governance">
+            <ShieldCheck aria-hidden="true" />
+            <span>{locale === "zh-CN" ? "可信回答中心" : "Trust center"}</span>
+            <small>{locale === "zh-CN" ? "验收" : "QA"}</small>
+          </Link>
           {(Object.keys(text.panels) as WorkspacePanel[]).map((panel) => {
             const Icon = panelIcons[panel];
             const count = panel === "teacher" ? pendingReviewCount : panel === "audit" ? auditEventCount : selectedDocumentCount;
