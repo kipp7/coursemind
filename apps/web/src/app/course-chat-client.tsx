@@ -30,6 +30,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CourseChatConversation } from "./course-chat-conversation";
 import { CourseChatSidebar } from "./course-chat-sidebar";
@@ -410,18 +411,29 @@ function toChatMessages(messages: ConversationMessage[], locale: AppLocale): Cha
     }));
 }
 
-export default function CourseChatClient() {
+type CourseChatClientProps = {
+  initialConversationId?: string;
+  initialCourseId?: string;
+  initialPanel?: WorkspacePanel | null;
+};
+
+export default function CourseChatClient({
+  initialConversationId,
+  initialCourseId,
+  initialPanel = null,
+}: CourseChatClientProps) {
+  const router = useRouter();
   const [locale, setLocale] = useState<AppLocale>("zh-CN");
   const text = copy[locale];
-  const [activePanel, setActivePanel] = useState<WorkspacePanel | null>(null);
+  const [activePanel, setActivePanel] = useState<WorkspacePanel | null>(initialPanel);
   const [courses, setCourses] = useState<CourseSnapshot[]>([]);
-  const [courseId, setCourseId] = useState("ai-101");
+  const [courseId, setCourseId] = useState(initialCourseId ?? "ai-101");
   const [role, setRole] = useState<CourseRole>("student");
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastResponse, setLastResponse] = useState<AnswerResponse | null>(null);
   const [activeConversation, setActiveConversation] = useState<ConversationLogEntry | null>(null);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(initialConversationId ?? null);
   const [conversationSummaries, setConversationSummaries] = useState<ConversationSummary[]>([]);
   const [reviewItems, setReviewItems] = useState<TeacherReviewQueueItem[]>([]);
   const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
@@ -455,13 +467,32 @@ export default function CourseChatClient() {
       const reviewData = (await reviewResponse.json()) as TeacherReviewQueueResponse;
       const auditData = (await auditResponse.json()) as AuditEventListResponse;
       const conversationData = (await conversationResponse.json()) as ConversationListResponse;
+      const conversationDetail = initialConversationId
+        ? await fetch(`/api/conversations/${initialConversationId}`).then(async (response) => {
+            const data = (await response.json()) as ConversationDetailResponse | { error: string };
+
+            if (!response.ok || "error" in data) {
+              throw new Error("error" in data ? data.error : text.assistant.requestFailed);
+            }
+
+            return data.item;
+          })
+        : null;
 
       if (mounted) {
         setCourses(courseData.courses);
-        setCourseId(courseData.courses[0]?.course.id ?? "ai-101");
+        setCourseId(conversationDetail?.courseId ?? initialCourseId ?? courseData.courses[0]?.course.id ?? "ai-101");
         setReviewItems(reviewData.items);
         setAuditEvents(auditData.items);
         setConversationSummaries(conversationData.items);
+        setActivePanel(initialPanel);
+
+        if (conversationDetail) {
+          setActiveConversation(conversationDetail);
+          setActiveConversationId(conversationDetail.conversationId);
+          setRole(conversationDetail.role);
+          setMessages(toChatMessages(conversationDetail.messages, locale));
+        }
       }
     }
 
@@ -474,7 +505,19 @@ export default function CourseChatClient() {
     return () => {
       mounted = false;
     };
-  }, [text.assistant.couldNotLoad]);
+  }, [initialConversationId, initialCourseId, initialPanel, locale, text.assistant.couldNotLoad, text.assistant.requestFailed]);
+
+  function panelRoute(panel: WorkspacePanel, targetCourseId = courseId) {
+    if (panel === "materials") {
+      return `/courses/${targetCourseId}/materials`;
+    }
+
+    if (panel === "teacher") {
+      return "/teacher/reviews";
+    }
+
+    return "/audit";
+  }
 
   async function refreshReviewQueue() {
     const response = await fetch("/api/teacher/reviews");
@@ -517,10 +560,37 @@ export default function CourseChatClient() {
     setActiveConversationId(null);
     setError(null);
     setActivePanel(null);
+    router.push("/chat");
   }
 
   function togglePanel(panel: WorkspacePanel) {
-    setActivePanel((current) => (current === panel ? null : panel));
+    if (activePanel === panel) {
+      setActivePanel(null);
+      router.push(courseId ? `/courses/${courseId}` : "/chat");
+      return;
+    }
+
+    setActivePanel(panel);
+    router.push(panelRoute(panel));
+  }
+
+  function closePanel() {
+    setActivePanel(null);
+    router.push(courseId ? `/courses/${courseId}` : "/chat");
+  }
+
+  function selectCourse(nextCourseId: string) {
+    setCourseId(nextCourseId);
+    setActiveConversation(null);
+    setActiveConversationId(null);
+
+    if (activePanel === "materials") {
+      router.push(`/courses/${nextCourseId}/materials`);
+      return;
+    }
+
+    setActivePanel(null);
+    router.push(`/courses/${nextCourseId}`);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -563,6 +633,7 @@ export default function CourseChatClient() {
       await refreshConversations();
       await refreshReviewQueue();
       await refreshAuditEvents();
+      router.push(`/chat/${data.conversationId}`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : text.assistant.requestFailed);
     } finally {
@@ -590,6 +661,7 @@ export default function CourseChatClient() {
       setLastResponse(null);
       setMessages(toChatMessages(data.item.messages, locale));
       setActivePanel(null);
+      router.push(`/chat/${conversationId}`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : text.assistant.requestFailed);
     } finally {
@@ -675,7 +747,7 @@ export default function CourseChatClient() {
         pendingReviewCount={pendingReviewCount}
         role={role}
         selectedDocumentCount={selectedCourse?.documents.length ?? 0}
-        setCourseId={setCourseId}
+        setCourseId={selectCourse}
         loadConversation={loadConversation}
         startNewQuestion={startNewQuestion}
         text={text}
@@ -732,7 +804,7 @@ export default function CourseChatClient() {
               <h2>{text.headers[activePanel].title}</h2>
               <span>{text.headers[activePanel].body}</span>
             </div>
-            <button className="icon-button" onClick={() => setActivePanel(null)} type="button" aria-label={text.closePanel}>
+            <button className="icon-button" onClick={closePanel} type="button" aria-label={text.closePanel}>
               <X aria-hidden="true" />
             </button>
           </div>

@@ -1,5 +1,5 @@
-import CourseChatClient from "./course-chat-client";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <CourseChatClient />;
+  redirect("/chat");
 }

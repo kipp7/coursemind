@@ -40,6 +40,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - Frontend component extraction has started: `CourseChatSidebar` now owns the left course/session/governance navigation while `CourseChatClient` keeps application state, API calls, conversation, composer, and governance panel orchestration.
 - Frontend component extraction continued: `CourseChatConversation` now owns the central empty state, message list, loading state, error line, and bottom composer while `CourseChatClient` keeps course, provider, review, audit, and document-ingestion orchestration.
 - The Web sidebar now consumes the persisted conversation history API: `/api/conversations` populates real chat history, and `/api/conversations/[conversationId]` restores a selected conversation into the central chat surface.
+- The Web MVP now has App Router entry points for `/chat`, `/chat/[conversationId]`, `/courses/[courseId]`, `/courses/[courseId]/materials`, `/teacher/reviews`, and `/audit`. These routes reuse the CourseMind chat shell while letting courses, conversations, materials, teacher review, and audit surfaces open directly from URLs.
 
 ## Constraints
 
@@ -66,6 +67,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 12. Keep future work committed and pushed in small coherent units.
 13. Evolve the Web MVP toward a Xiaoyu-style school workbench with distinct student Q&A and teacher review/dashboard surfaces.
 14. Adapt materials/review/audit panels into production-shaped workflows and continue replacing mock-only UI state with persisted API data.
+15. Continue separating route-specific teacher/material/audit surfaces after the current routed shell is accepted for the MVP demo.
 
 ## Done Criteria
 
