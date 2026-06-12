@@ -14,8 +14,7 @@ import type {
 } from "@coursemind/contracts";
 import { createModelGateway } from "../model/provider-registry";
 import { createRagGateway } from "../rag/provider-registry";
-import { auditEventRepository } from "../repositories/in-memory-audit-event-repository";
-import { conversationRepository } from "../repositories/in-memory-conversation-repository";
+import { auditEventRepository, conversationRepository } from "../repositories/repository-registry";
 
 type CourseMindCourseGlobal = typeof globalThis & {
   __coursemindCourseSnapshots?: CourseSnapshot[];
@@ -172,7 +171,7 @@ export async function answerCourseQuestion(request: AnswerRequest): Promise<Answ
     guardrails,
   });
   const now = new Date().toISOString();
-  const conversationId = `conv-${request.courseId}-demo`;
+  const conversationId = `conv-${request.courseId}-${Date.now()}`;
   const userMessageId = `msg-user-${Date.now()}`;
   const messageId = `msg-${Date.now()}`;
   const userMessage: ConversationMessage = {

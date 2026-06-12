@@ -42,6 +42,7 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 - The Web sidebar now consumes the persisted conversation history API: `/api/conversations` populates real chat history, and `/api/conversations/[conversationId]` restores a selected conversation into the central chat surface.
 - The Web MVP now has App Router entry points for `/chat`, `/chat/[conversationId]`, `/courses/[courseId]`, `/courses/[courseId]/materials`, `/teacher/reviews`, and `/audit`. These routes reuse the CourseMind chat shell while letting courses, conversations, materials, teacher review, and audit surfaces open directly from URLs.
 - A standalone `/governance` route now exists as the school-facing trust center. It explains the student question -> course retrieval -> model answer -> citation -> teacher review -> audit trail path in human-readable terms, while keeping the student chat surface uncluttered.
+- Conversation history, teacher review queue items, and audit events now have a default local SQLite persistence boundary through Node's built-in `node:sqlite`. `COURSEMIND_STORAGE=in-memory` remains available for temporary process-only demos.
 
 ## Constraints
 
@@ -60,8 +61,8 @@ Build a Web MVP for CourseMind that demonstrates a school-ready course agent exp
 4. Test the Dify adapter against a real Dify app and course knowledge base when credentials are available.
 5. Test the RAGFlow adapter against a real RAGFlow chat assistant and course dataset when credentials are available.
 6. Add validation to future API routes as they are introduced.
-7. Replace the in-memory audit event repository with durable storage when production persistence is introduced.
-8. Replace the in-memory persistence repository with Prisma/PostgreSQL when durable storage is needed.
+7. Replace local SQLite storage with PostgreSQL or another production database when deployment persistence is needed.
+8. Move course snapshots and document metadata from the current mock course state into the same durable storage boundary.
 9. Replace the mock document ingestion task with real file upload, parsing, indexing, and provider adapter handoff.
 10. Continue polishing Chinese school-facing copy and add formal i18n routing later if the MVP needs shareable language-specific URLs.
 11. Continue extracting frontend components once the ChatGPT-like course chat information architecture stabilizes.

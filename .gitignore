@@ -22,6 +22,7 @@ course-materials/private/
 ctx-*.log
 *.db
 *.sqlite
+*.sqlite-*
 *.sqlite3
 04_aI-conversation/
 # /memory-context-workspace

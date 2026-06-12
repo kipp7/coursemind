@@ -97,14 +97,16 @@ Expected data domains:
 
 MVP can mock or defer parts of storage, but the architecture should preserve these boundaries.
 
-The MVP now has a mock persistence boundary in `services/api/src/repositories`:
+The MVP now has a persistence boundary in `services/api/src/repositories`:
 
 - `ConversationRepository` defines the application-facing storage interface.
-- `InMemoryConversationRepository` stores conversation messages, citations, RAG traces, and teacher review queue items for the running server process.
+- `SqliteConversationRepository` is the default local MVP store for conversation messages, citations, RAG traces, model traces, and teacher review queue items.
+- `InMemoryConversationRepository` remains available by setting `COURSEMIND_STORAGE=in-memory`.
 - `/api/conversations` exposes persisted conversation summaries for the Web demo.
 - `/api/conversations/[conversationId]` exposes a full persisted conversation log for the Web demo.
 - `AuditEventRepository` defines the application-facing audit log interface.
-- `InMemoryAuditEventRepository` stores answer-created and teacher-review-updated events for the running server process.
+- `SqliteAuditEventRepository` is the default local MVP store for answer-created, document-ingestion, and teacher-review-updated events.
+- SQLite local state is stored at `data/coursemind.sqlite` by default, or at `COURSEMIND_SQLITE_PATH` when configured.
 - `/api/teacher/reviews` exposes the current teacher review queue for the Web demo.
 - `/api/teacher/reviews/[reviewId]` lets the demo approve, correct, or reject a pending teacher review.
 - `/api/audit/events` exposes the current audit trail for the Web demo.
@@ -112,7 +114,7 @@ The MVP now has a mock persistence boundary in `services/api/src/repositories`:
 - `DifyRagGateway` and `RagFlowRagGateway` now exist as provider adapter skeletons behind the same `RagGateway` interface. They require server-side runtime configuration before real use.
 - `MockModelGateway` and `OpenAiCompatibleModelGateway` now exist behind the same `ModelGateway` interface. Answer responses and stored conversation logs now include `modelTrace` alongside `ragTrace`.
 
-This is not durable database storage. It exists to prove the school review and audit boundary before introducing Prisma/PostgreSQL or another production store.
+This is local durable MVP storage, not yet production storage. It exists to prove the school review and audit boundary before introducing PostgreSQL or another production store.
 
 ## RAG Before Fine-Tuning
 
