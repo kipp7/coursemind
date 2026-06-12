@@ -5,6 +5,7 @@
 !.tools/basic-memory/
 !.tools/basic-memory/*.cmd
 .venv/
+.tmp/
 node_modules/
 __pycache__/
 .next/

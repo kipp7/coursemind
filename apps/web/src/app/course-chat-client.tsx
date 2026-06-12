@@ -132,6 +132,7 @@ const copy = {
       coverage: "覆盖率",
       materialList: "课程资料列表",
       addMaterial: "新增课程资料",
+      uploadFile: "上传文件",
       titleLabel: "资料标题",
       titlePlaceholder: "例如：第 5 讲：向量数据库与检索评估",
       sourceType: "资料类型",
@@ -273,6 +274,7 @@ const copy = {
       coverage: "Coverage",
       materialList: "Course material list",
       addMaterial: "Add course material",
+      uploadFile: "Upload file",
       titleLabel: "Material title",
       titlePlaceholder: "Example: Lecture 5: Vector DB and retrieval evaluation",
       sourceType: "Source type",
@@ -412,6 +414,57 @@ function toChatMessages(messages: ConversationMessage[], locale: AppLocale): Cha
     }));
 }
 
+function toDocumentFormData(input: {
+  title: string;
+  file: File;
+  sourceType: CourseDocumentCreateRequest["sourceType"];
+  visibility: CourseDocumentCreateRequest["visibility"];
+  locale: AppLocale;
+}) {
+  const formData = new FormData();
+
+  formData.set("title", input.title);
+  formData.set("sourceType", input.sourceType);
+  formData.set("visibility", input.visibility);
+  formData.set("actorUserId", "teacher-demo");
+  formData.set("locale", input.locale);
+  formData.set("file", input.file);
+
+  return formData;
+}
+
+function inferSourceTypeFromFileName(fileName: string, mimeType: string): CourseDocumentCreateRequest["sourceType"] {
+  const extension = fileName.toLowerCase().split(".").at(-1);
+
+  if (extension === "pdf" || mimeType.includes("pdf")) {
+    return "pdf";
+  }
+
+  if (extension === "ppt" || extension === "pptx" || mimeType.includes("presentation")) {
+    return "ppt";
+  }
+
+  if (extension === "doc" || extension === "docx" || mimeType.includes("word")) {
+    return "word";
+  }
+
+  if (extension === "html" || extension === "htm") {
+    return "web";
+  }
+
+  return "markdown";
+}
+
+function titleFromFileName(fileName: string) {
+  const parts = fileName.split(".");
+
+  if (parts.length <= 1) {
+    return fileName;
+  }
+
+  return parts.slice(0, -1).join(".") || fileName;
+}
+
 type CourseChatClientProps = {
   initialConversationId?: string;
   initialCourseId?: string;
@@ -441,6 +494,8 @@ export default function CourseChatClient({
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingDocument, setIsCreatingDocument] = useState(false);
   const [documentTitle, setDocumentTitle] = useState("");
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [documentFileInputKey, setDocumentFileInputKey] = useState(0);
   const [documentSourceType, setDocumentSourceType] = useState<CourseDocumentCreateRequest["sourceType"]>("pdf");
   const [documentVisibility, setDocumentVisibility] = useState<CourseDocumentCreateRequest["visibility"]>("student");
   const [documentNotice, setDocumentNotice] = useState<string | null>(null);
@@ -673,7 +728,7 @@ export default function CourseChatClient({
   async function handleCreateDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!selectedCourse || !documentTitle.trim()) {
+    if (!selectedCourse || (!documentTitle.trim() && !documentFile)) {
       return;
     }
 
@@ -682,16 +737,26 @@ export default function CourseChatClient({
     setError(null);
 
     try {
+      const title = documentTitle.trim() || documentFile?.name || "";
+      const body = documentFile
+        ? toDocumentFormData({
+            title,
+            file: documentFile,
+            sourceType: documentSourceType,
+            visibility: documentVisibility,
+            locale,
+          })
+        : JSON.stringify({
+            title,
+            sourceType: documentSourceType,
+            visibility: documentVisibility,
+            actorUserId: "teacher-demo",
+            locale,
+          });
       const response = await fetch(`/api/courses/${selectedCourse.course.id}/documents`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: documentTitle.trim(),
-          sourceType: documentSourceType,
-          visibility: documentVisibility,
-          actorUserId: "teacher-demo",
-          locale,
-        }),
+        headers: documentFile ? undefined : { "Content-Type": "application/json" },
+        body,
       });
       const data = (await response.json()) as CourseDocumentCreateResponse | { error: string };
 
@@ -701,6 +766,8 @@ export default function CourseChatClient({
 
       setCourses((current) => current.map((item) => (item.course.id === data.snapshot.course.id ? data.snapshot : item)));
       setDocumentTitle("");
+      setDocumentFile(null);
+      setDocumentFileInputKey((current) => current + 1);
       setDocumentNotice(text.courses.created);
       await refreshAuditEvents();
     } catch (requestError) {
@@ -846,6 +913,25 @@ export default function CourseChatClient({
                     placeholder={text.courses.titlePlaceholder}
                     value={documentTitle}
                   />
+                  <label htmlFor="document-file">{text.courses.uploadFile}</label>
+                  <input
+                    accept=".pdf,.ppt,.pptx,.doc,.docx,.md,.markdown,.txt,.html,.htm"
+                    id="document-file"
+                    key={documentFileInputKey}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setDocumentFile(file);
+
+                      if (file) {
+                        setDocumentSourceType(inferSourceTypeFromFileName(file.name, file.type));
+
+                        if (!documentTitle.trim()) {
+                          setDocumentTitle(titleFromFileName(file.name));
+                        }
+                      }
+                    }}
+                    type="file"
+                  />
                   <div className="document-form-row">
                     <label>
                       <span>{text.courses.sourceType}</span>
@@ -869,7 +955,7 @@ export default function CourseChatClient({
                     </label>
                   </div>
                   {documentNotice ? <p className="success-line">{documentNotice}</p> : null}
-                  <button className="secondary-action" disabled={isCreatingDocument || !documentTitle.trim()} type="submit">
+                  <button className="secondary-action" disabled={isCreatingDocument || (!documentTitle.trim() && !documentFile)} type="submit">
                     <FilePlus2 aria-hidden="true" />
                     {isCreatingDocument ? text.courses.submitting : text.courses.submit}
                   </button>
@@ -886,7 +972,10 @@ export default function CourseChatClient({
                     <article key={document.id}>
                       <div>
                         <strong>{getDocumentTitle(document.id, document.title, locale)}</strong>
-                        <span>{text.sourceTypes[document.sourceType]} · {text.visibility[document.visibility]}</span>
+                        <span>
+                          {text.sourceTypes[document.sourceType]} · {text.visibility[document.visibility]}
+                          {document.originalFileName ? ` · ${document.originalFileName}` : ""}
+                        </span>
                       </div>
                       <span className="status-chip">{text.statuses[document.ingestionStatus]}</span>
                     </article>

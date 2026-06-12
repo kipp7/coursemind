@@ -23,6 +23,11 @@ export const courseDocumentSchema = z.object({
   sourceType: z.enum(["pdf", "ppt", "word", "markdown", "web", "transcript"]),
   visibility: z.enum(["student", "teacher", "admin"]),
   ingestionStatus: z.enum(["pending", "indexed", "needs_review", "blocked"]),
+  originalFileName: z.string().min(1).optional(),
+  mimeType: z.string().min(1).optional(),
+  sizeBytes: z.number().int().nonnegative().optional(),
+  storagePath: z.string().min(1).optional(),
+  uploadedAt: z.string().datetime().optional(),
 });
 export type CourseDocument = z.infer<typeof courseDocumentSchema>;
 
@@ -32,6 +37,10 @@ export const courseDocumentCreateRequestSchema = z.object({
   visibility: z.enum(["student", "teacher", "admin"]),
   actorUserId: z.string().min(1).optional(),
   locale: appLocaleSchema.default("zh-CN"),
+  originalFileName: z.string().min(1).optional(),
+  mimeType: z.string().min(1).optional(),
+  sizeBytes: z.number().int().nonnegative().optional(),
+  storagePath: z.string().min(1).optional(),
 });
 export type CourseDocumentCreateRequest = z.infer<typeof courseDocumentCreateRequestSchema>;
 

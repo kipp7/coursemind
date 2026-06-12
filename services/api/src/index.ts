@@ -25,4 +25,5 @@ export type { AuditEventRepository, RecordAuditEventInput } from "./repositories
 export { auditEventRepository, conversationRepository } from "./repositories/repository-registry";
 export { SqliteAuditEventRepository } from "./repositories/sqlite-audit-event-repository";
 export { SqliteConversationRepository } from "./repositories/sqlite-conversation-repository";
+export { SqliteCourseDocumentRepository } from "./repositories/sqlite-course-document-repository";
 export type { RagGateway, RagRetrievalRequest, RagRetrievalResult } from "./rag/rag-gateway";

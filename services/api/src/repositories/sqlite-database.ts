@@ -63,9 +63,25 @@ function createDatabase() {
       metadata_json TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS course_documents (
+      id TEXT PRIMARY KEY,
+      course_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      source_type TEXT NOT NULL,
+      visibility TEXT NOT NULL,
+      ingestion_status TEXT NOT NULL,
+      original_file_name TEXT,
+      mime_type TEXT,
+      size_bytes INTEGER,
+      storage_path TEXT,
+      uploaded_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS conversations_updated_at_idx ON conversations(updated_at);
     CREATE INDEX IF NOT EXISTS teacher_review_items_created_at_idx ON teacher_review_items(created_at);
     CREATE INDEX IF NOT EXISTS audit_events_occurred_at_idx ON audit_events(occurred_at);
+    CREATE INDEX IF NOT EXISTS course_documents_course_id_idx ON course_documents(course_id);
   `);
 
   return database;

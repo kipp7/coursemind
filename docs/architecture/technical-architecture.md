@@ -110,11 +110,13 @@ The MVP now has a persistence boundary in `services/api/src/repositories`:
 - `/api/teacher/reviews` exposes the current teacher review queue for the Web demo.
 - `/api/teacher/reviews/[reviewId]` lets the demo approve, correct, or reject a pending teacher review.
 - `/api/audit/events` exposes the current audit trail for the Web demo.
-- `/api/courses/[courseId]/documents` creates a mocked course material ingestion task and records it in the audit trail.
+- `/api/courses/[courseId]/documents` accepts JSON metadata or multipart file uploads. Uploaded files are stored under `uploads/course-documents` by default, document metadata is persisted in SQLite, and an ingestion-request audit event is recorded.
 - `DifyRagGateway` and `RagFlowRagGateway` now exist as provider adapter skeletons behind the same `RagGateway` interface. They require server-side runtime configuration before real use.
 - `MockModelGateway` and `OpenAiCompatibleModelGateway` now exist behind the same `ModelGateway` interface. Answer responses and stored conversation logs now include `modelTrace` alongside `ragTrace`.
 
 This is local durable MVP storage, not yet production storage. It exists to prove the school review and audit boundary before introducing PostgreSQL or another production store.
+
+Course material upload is now real at the file and metadata boundary, but parsing, chunking, embedding, indexing, and provider handoff are still future ingestion steps.
 
 ## RAG Before Fine-Tuning
 

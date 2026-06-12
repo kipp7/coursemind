@@ -14,7 +14,7 @@ import type {
 } from "@coursemind/contracts";
 import { createModelGateway } from "../model/provider-registry";
 import { createRagGateway } from "../rag/provider-registry";
-import { auditEventRepository, conversationRepository } from "../repositories/repository-registry";
+import { auditEventRepository, conversationRepository, courseDocumentRepository } from "../repositories/repository-registry";
 
 type CourseMindCourseGlobal = typeof globalThis & {
   __coursemindCourseSnapshots?: CourseSnapshot[];
@@ -96,7 +96,7 @@ const courseGlobal = globalThis as CourseMindCourseGlobal;
 const courseSnapshots = courseGlobal.__coursemindCourseSnapshots ??= defaultCourseSnapshots;
 
 export function getCourseSnapshots() {
-  return courseSnapshots;
+  return courseSnapshots.map(withPersistedDocuments);
 }
 
 export async function createCourseDocument(
@@ -116,10 +116,19 @@ export async function createCourseDocument(
     sourceType: request.sourceType,
     visibility: request.visibility,
     ingestionStatus: request.visibility === "teacher" ? "needs_review" : "pending",
+    originalFileName: request.originalFileName,
+    mimeType: request.mimeType,
+    sizeBytes: request.sizeBytes,
+    storagePath: request.storagePath,
+    uploadedAt: new Date().toISOString(),
   };
 
-  snapshot.documents = [document, ...snapshot.documents];
-  snapshot.pendingReviewCount += document.ingestionStatus === "needs_review" ? 1 : 0;
+  if (courseDocumentRepository) {
+    courseDocumentRepository.saveDocument(document);
+  } else {
+    snapshot.documents = [document, ...snapshot.documents];
+    snapshot.pendingReviewCount += document.ingestionStatus === "needs_review" ? 1 : 0;
+  }
 
   await auditEventRepository.recordEvent({
     type: "course_document.ingestion_requested",
@@ -141,18 +150,19 @@ export async function createCourseDocument(
   });
 
   return {
-    snapshot,
+    snapshot: withPersistedDocuments(snapshot),
     document,
   };
 }
 
 export async function answerCourseQuestion(request: AnswerRequest): Promise<AnswerResponse> {
-  const snapshot = courseSnapshots.find((item) => item.course.id === request.courseId);
+  const baseSnapshot = courseSnapshots.find((item) => item.course.id === request.courseId);
 
-  if (!snapshot) {
+  if (!baseSnapshot) {
     throw new Error(`Unknown course: ${request.courseId}`);
   }
 
+  const snapshot = withPersistedDocuments(baseSnapshot);
   const ragGateway = createRagGateway();
   const retrieval = await ragGateway.retrieveCourseContext({
     courseId: snapshot.course.id,
@@ -306,4 +316,18 @@ function getCourseTitle(snapshot: CourseSnapshot, locale: AppLocale) {
   }
 
   return snapshot.course.title;
+}
+
+function withPersistedDocuments(snapshot: CourseSnapshot): CourseSnapshot {
+  const persistedDocuments = courseDocumentRepository?.listDocumentsByCourse(snapshot.course.id) ?? [];
+  const persistedDocumentIds = new Set(persistedDocuments.map((document) => document.id));
+  const baseDocuments = snapshot.documents.filter((document) => !persistedDocumentIds.has(document.id));
+  const documents = [...persistedDocuments, ...baseDocuments];
+
+  return {
+    ...snapshot,
+    documents,
+    pendingReviewCount:
+      snapshot.pendingReviewCount + persistedDocuments.filter((document) => document.ingestionStatus === "needs_review").length,
+  };
 }
