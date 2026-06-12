@@ -2,6 +2,7 @@
 
 import type { AppLocale, ConversationSummary, CourseRole, CourseSnapshot } from "@coursemind/contracts";
 import { BarChart3, Languages, Library, MessagesSquare, SlidersHorizontal, SquarePen } from "lucide-react";
+import Link from "next/link";
 import type { WorkspacePanel } from "./course-chat-types";
 
 type SidebarText = {
@@ -62,6 +63,18 @@ const panelIcons = {
   audit: BarChart3,
 };
 
+function panelHref(panel: WorkspacePanel, courseId: string) {
+  if (panel === "materials") {
+    return `/courses/${courseId}/materials`;
+  }
+
+  if (panel === "teacher") {
+    return "/teacher/reviews";
+  }
+
+  return "/audit";
+}
+
 export function CourseChatSidebar({
   activePanel,
   activeConversationId,
@@ -95,36 +108,36 @@ export function CourseChatSidebar({
         </div>
       </div>
 
-      <button className="new-chat-button" onClick={startNewQuestion} type="button">
+      <Link className="new-chat-button" href="/chat" onClick={startNewQuestion}>
         <SquarePen aria-hidden="true" />
         <span>{text.newChat}</span>
-      </button>
+      </Link>
 
       <section className="sidebar-section">
         <p>{text.currentCourse}</p>
         <div className="course-list">
           {courses.length > 0
             ? courses.map((item) => (
-                <button
+                <Link
                   className={courseId === item.course.id ? "course-item active" : "course-item"}
+                  href={`/courses/${item.course.id}`}
                   key={item.course.id}
                   onClick={() => setCourseId(item.course.id)}
-                  type="button"
                 >
                   <span>{getCourseTitle(item.course, locale)}</span>
                   <small>{item.documents.length} docs</small>
-                </button>
+                </Link>
               ))
             : fallbackCourseSummaries.map((item) => (
-                <button
+                <Link
                   className={courseId === item.id ? "course-item active" : "course-item"}
+                  href={`/courses/${item.id}`}
                   key={item.id}
                   onClick={() => setCourseId(item.id)}
-                  type="button"
                 >
                   <span>{courseTitles[locale][item.id]}</span>
                   <small>{item.documentCount} docs</small>
-                </button>
+                </Link>
               ))}
         </div>
       </section>
@@ -133,16 +146,16 @@ export function CourseChatSidebar({
         <p>{text.sideTitle}</p>
         {conversationSummaries.length > 0 ? (
           conversationSummaries.map((conversation) => (
-            <button
+            <Link
               className={activeConversationId === conversation.conversationId ? "history-item active" : "history-item"}
+              href={`/chat/${conversation.conversationId}`}
               key={conversation.conversationId}
               onClick={() => loadConversation(conversation.conversationId)}
-              type="button"
             >
               <MessagesSquare aria-hidden="true" />
               <span>{conversation.title}</span>
               <small>{conversation.messageCount}</small>
-            </button>
+            </Link>
           ))
         ) : (
           <div className="history-empty">{text.noChats}</div>
@@ -157,16 +170,16 @@ export function CourseChatSidebar({
             const count = panel === "teacher" ? pendingReviewCount : panel === "audit" ? auditEventCount : selectedDocumentCount;
 
             return (
-              <button
+              <Link
                 className={activePanel === panel ? "panel-shortcut active" : "panel-shortcut"}
+                href={panelHref(panel, courseId)}
                 key={panel}
                 onClick={() => togglePanel(panel)}
-                type="button"
               >
                 <Icon aria-hidden="true" />
                 <span>{text.panels[panel]}</span>
                 <small>{count}</small>
-              </button>
+              </Link>
             );
           })}
         </div>

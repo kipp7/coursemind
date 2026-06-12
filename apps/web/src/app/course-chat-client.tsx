@@ -30,6 +30,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { CourseChatConversation } from "./course-chat-conversation";
@@ -768,16 +769,16 @@ export default function CourseChatClient({
               const Icon = panelIcons[panel];
 
               return (
-                <button
+                <Link
                   className={activePanel === panel ? "tool-button active" : "tool-button"}
+                  href={panelRoute(panel)}
                   key={panel}
                   onClick={() => togglePanel(panel)}
-                  type="button"
                   aria-label={`${text.openPanel}: ${text.panels[panel]}`}
                 >
                   <Icon aria-hidden="true" />
                   <span>{text.panels[panel]}</span>
-                </button>
+                </Link>
               );
             })}
           </div>
